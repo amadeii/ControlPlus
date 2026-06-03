@@ -1,0 +1,197 @@
+@php
+    $tradeinInventoryId = request('tradein_inventory_id');
+    $tradeinProdutoId   = request('produto_id');
+    $tradeinProdutoNome = '';
+    $tradeinSerial      = request('serial');
+    $tradeinStatusOptions = collect($statusOperacionalOptions ?? [])
+        ->mapWithKeys(function ($status) {
+            return [($status['value'] ?? '') => ($status['label'] ?? $status['value'] ?? '')];
+        })
+        ->filter(function ($label, $value) {
+            return $value !== '';
+        })
+        ->all();
+    if (empty($tradeinStatusOptions)) {
+        $tradeinStatusOptions = ['ATIVO' => 'ATIVO'];
+    }
+    $tradeinStatusSelecionado = old('status_operacional', request('status_operacional', 'ATIVO'));
+    if ($tradeinInventoryId && $tradeinProdutoId) {
+        $tradeinProdutoObj  = \App\Models\Produto::find($tradeinProdutoId);
+        $tradeinProdutoNome = $tradeinProdutoObj ? $tradeinProdutoObj->nome : '';
+    }
+@endphp
+<div class="row">
+    @if($tradeinInventoryId)
+    <input type="hidden" name="tradein_inventory_id" value="{{ $tradeinInventoryId }}">
+    <input type="hidden" name="produto_id" value="{{ $tradeinProdutoId }}">
+    @if($tradeinSerial)
+    <input type="hidden" name="serial" value="{{ $tradeinSerial }}">
+    @endif
+    <div class="col-md-4">
+        <label class="form-label">Produto <span class="text-danger">*</span></label>
+        <input type="text" class="form-control" value="{{ $tradeinProdutoNome ?: '(produto do trade-in)' }}" readonly>
+        @if($tradeinSerial)
+        <small class="text-muted">Serial: <strong>{{ $tradeinSerial }}</strong></small>
+        @endif
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Status operacional <span class="text-danger">*</span></label>
+        <select class="form-select" name="status_operacional" required>
+            @foreach($tradeinStatusOptions as $statusValue => $statusLabel)
+            <option value="{{ $statusValue }}" @selected($tradeinStatusSelecionado === $statusValue)>{{ $statusLabel }}</option>
+            @endforeach
+        </select>
+    </div>
+    @else
+    <div class="col-md-4">
+        {!!Form::select('produto_id', 'Produto')
+        ->attrs(['class' => 'form-select'])->required()
+        ->options(isset($item) ? [$item->produto->id => $item->produto->nome] : [])
+        ->disabled(isset($item) ? true : false)
+        !!}
+    </div>
+    @endif
+
+    @if(isset($item) && $item->produtoVariacao)
+    <div class="col-md-2">
+        {!!Form::text('', 'Variação')->value($item->produtoVariacao->descricao)
+        !!}
+    </div>
+    @endif
+
+    @if(isset($item) && __countLocalAtivo() > 1)
+    <div class="row">
+        <div class="col-md-8">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Depósito</th>
+                            <th>Quantidade</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($locais as $l)
+                        <tr>
+                            <td style="width: 60%;">
+                                @if($l->local)
+
+                                <select class="form-select" name="local_id[]" required>
+                                    @foreach(__getLocaisAtivoUsuario() as $localAtivo)
+                                    <option @if($l->local_id == $localAtivo->id) selected @endif value="{{ $localAtivo->id }}">{{ $localAtivo->descricao }}</option>
+                                    @endforeach
+                                </select>
+
+                                <input type="hidden" readonly class="form-control" required name="local_anteior_id[]" value="{{ $l->local_id }}">
+                                <!-- <input readonly class="form-control" required value="{{ $l->local->descricao }}"> -->
+
+                                @else
+                                <select class="form-select" name="local_id[]" required>
+                                    @foreach(__getLocaisAtivoUsuario() as $localAtivo)
+                                    <option value="{{ $localAtivo->id }}">{{ $localAtivo->descricao }}</option>
+                                    @endforeach
+                                </select>
+                                <input type="hidden" readonly class="form-control" name="local_anteior_id[]" value="">
+                                <input type="hidden" name="novo_estoque" value="1">
+                                @endif
+                            </td>
+                            <td>
+                                <input class="form-control @if($item->produto->unidadeDecimal()) quantidade @endif" @if(!$item->produto->unidadeDecimal()) value="{{ number_format($l->quantidade, 0) }}" @else value="{{ number_format($l->quantidade, 3) }}" @endif required name="quantidade[]" @if(!$item->produto->unidadeDecimal()) data-mask="000000" @endif>
+                            </td>
+                        </tr>
+
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    @else
+    <div class="col-md-2">
+        {!!Form::tel('quantidade', 'Quantidade')
+        ->attrs((isset($item) && (!$item->produto->unidadeDecimal())) ? ['data-mask' => '000000'] : ['class' => 'qtd'])
+        ->required()
+        ->value(isset($item) ? ((!$item->produto->unidadeDecimal()) ? number_format($item->quantidade, 0) : number_format($item->quantidade, 2, ',', '')) : (request('quantidade') ?: ''))
+        !!}
+    </div>
+
+    @if(__countLocalAtivo() > 1)
+
+    <div class="col-md-3">
+        <label for="">Depósito</label>
+
+        <select required class="select2" data-toggle="select2" name="local_id">
+            @foreach(__getLocaisAtivoUsuario() as $local)
+            <option @isset($item) @if($item->local_id == $local->id) selected @endif @endif value="{{ $local->id }}">{{ $local->descricao }}</option>
+            @endforeach
+        </select>
+    </div>
+    @else
+    @php
+    $localPadraoFormulario = __getLocalAtivo();
+    if(!$localPadraoFormulario && request()->empresa_id){
+        $localPadraoFormulario = __getLocalPadraoEmpresa(request()->empresa_id);
+    }
+    @endphp
+    <input type="hidden" name="local_id" value="{{ $localPadraoFormulario ? $localPadraoFormulario->id : '' }}">
+    @endif
+    @endif
+
+    <input name="produto_variacao_id" id="produto_variacao_id" type="hidden">
+    <hr class="mt-4">
+    <div class="col-12" style="text-align: right;">
+        <button type="submit" class="btn btn-success px-5" id="btn-store">Salvar</button>
+    </div>
+</div>
+@include('modals._variacao')
+
+@section('js')
+<script type="text/javascript">
+    $(function(){
+        $('#produto_variacao_id').val('')
+    })
+
+    $(document).on("change", "#inp-produto_id", function () {
+        $('#produto_variacao_id').val('')
+
+        let product_id = $(this).val()
+        $.get(path_url + "api/produtos/find", 
+        { 
+            produto_id: product_id,
+            usuario_id: $('#usuario_id').val()
+        })
+        .done((e) => {
+
+            let codigo_variacao = $(this).select2('data')[0].codigo_variacao
+
+            if(e.variacao_modelo_id > 0 && !codigo_variacao){
+                buscarVariacoes(product_id)
+            }
+
+            if(codigo_variacao > 0){
+                $('#produto_variacao_id').val(codigo_variacao)
+            }
+        })
+        .fail((err) => {
+            console.log(err)
+        })
+    })
+
+    function buscarVariacoes(produto_id){
+        $.get(path_url + "api/variacoes/find", { produto_id: produto_id })
+        .done((res) => {
+            $('#modal_variacao .modal-body').html(res)
+            $('#modal_variacao').modal('show')
+        })
+        .fail((err) => {
+            console.log(err)
+            swal("Algo deu errado", "Erro ao buscar variações", "error")
+        })
+    }
+
+    function selecionarVariacao(id, descricao, valor){
+        $('#produto_variacao_id').val(id)
+        $('#modal_variacao').modal('hide')
+    }
+</script>
+@endsection

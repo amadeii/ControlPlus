@@ -1,0 +1,90 @@
+@extends('relatorios.default')
+@section('content')
+
+@section('css')
+<style type="text/css">
+    .circulo {
+        background: lightblue;
+        border-radius: 50%;
+        width: 100px;
+        height: 100px;
+    }
+</style>
+@endsection
+
+@if($estoque_minimo == 1)
+<p style="color: red">Relatório para estoque mínimo</p><br>
+@endif
+
+@php
+    $isEstoqueCritico = !empty($estoque_critico);
+@endphp
+
+@if($isEstoqueCritico)
+<p style="color: red">Relatório para estoque crítico: produtos sem movimentação há mais de <strong>{{ $estoque_critico }}</strong> dias.</p><br>
+@endif
+
+@if($deposito != null)
+<h5>Depósito: <strong>{{ $deposito->nome }}@if($deposito->localizacao) ({{ $deposito->localizacao->descricao }})@endif</strong></h5>
+@endif
+<p style="font-size: 11px; color: #555; margin-bottom: 12px;">Exibe o saldo atual dos produtos com base no estoque registrado no sistema no momento da geração.</p>
+<table class="table-sm table-borderless" style="border-bottom: 1px solid rgb(206, 206, 206); margin-bottom:10px;  width: 100%;">
+    <thead>
+        <tr>
+            <th style="width: 300px">Produto</th>
+            <th>SKU</th>
+            <th>Categoria</th>
+            <th>Valor de compra</th>
+            <th>Valor de venda</th>
+            <th>Valor de lucro</th>
+            <th>Quantidade</th>
+            <th>Estoque mínimo</th>
+            @if($isEstoqueCritico)
+            <th>Última movimentação</th>
+            @endif
+            <th>Data de cadastro</th>
+        </tr>
+    </thead>
+    <tbody>
+        @php
+        $somaVenda = 0;
+        $somaCompra = 0;
+        $somaQtd = 0;
+        @endphp
+        @foreach($data as $key => $item)
+        <tr class="@if($key%2 == 0) pure-table-odd @endif">
+            <td>{{ $item['produto'] }}</td>
+            <td><code>{{ $item['sku'] ?? '--' }}</code></td>
+            <td>{{ $item['categoria'] }}</td>
+            <td>{{ __moeda($item['valor_compra']) }}</td>
+            <td>{{ __moeda($item['valor_venda']) }}</td>
+            <td>{{ __moeda((float)$item['valor_venda'] - (float)$item['valor_compra']) }}</td>
+            <td>
+                {{ number_format((float)$item['quantidade'], __casas_decimais_quantidade(), ',' , '.') }}
+            </td>
+            <td>{{ $item['estoque_minimo'] }}</td>
+            @if($isEstoqueCritico)
+            <td>{{ $item['ultima_movimentacao'] }}</td>
+            @endif
+            <td>{{ $item['data_cadastro'] }}</td>
+        </tr>
+
+        @php
+        $somaVenda += (float)$item['valor_venda']*(float)$item['quantidade'];
+        $somaCompra += (float)$item['valor_compra']*(float)$item['quantidade'];
+        $somaQtd += (float)$item['quantidade'];
+        @endphp
+        @endforeach
+    </tbody>
+    <tfoot>
+        <tr>
+            <td colspan="2">Soma</td>
+            <td>{{ __moeda($somaCompra) }}</td>
+            <td>{{ __moeda($somaVenda) }}</td>
+            <td>{{ $somaQtd }}</td>
+        </tr>
+    </tfoot>
+    
+</table>
+
+@endsection
