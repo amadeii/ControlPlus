@@ -16,7 +16,7 @@
       - controlplus
     restart: unless-stopped
 
-  web:
+    web:
     build:
       context: .
       dockerfile: docker/nginx/Dockerfile.coolify
@@ -28,6 +28,8 @@
       - .:/var/www/html
     networks:
       - controlplus
+    ports:
+      - "80:80"
     restart: unless-stopped
 
   db:
