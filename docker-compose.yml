@@ -16,20 +16,20 @@ services:
         networks:
             - controlplus
 
- web:
-    build:
-        context: .
-        dockerfile: docker/nginx/Dockerfile.coolify
-    container_name: frontend
-    env_file: .env
-    depends_on:
-        - app
-    ports:
-        - "8080:80"
-    volumes:
-        - .:/var/www/html:cached
-    networks:
-        - controlplus
+    web:
+        build:
+            context: .
+            dockerfile: docker/nginx/Dockerfile.coolify
+        container_name: frontend
+        env_file: .env
+        depends_on:
+            - app
+        ports:
+            - "8080:80"
+        volumes:
+            - .:/var/www/html:cached
+        networks:
+            - controlplus
 
     db:
         image: mysql:8.0
@@ -37,9 +37,7 @@ services:
         env_file: .env
         restart: unless-stopped
         command: >
-            --default-authentication-plugin=mysql_native_password
-            --character-set-server=utf8mb4
-            --collation-server=utf8mb4_unicode_ci
+            --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
         environment:
             MYSQL_DATABASE: ${DB_DATABASE}
             MYSQL_USER: ${DB_USERNAME}
