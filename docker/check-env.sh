@@ -3,9 +3,11 @@ set -eo pipefail
 
 ENV_FILE="/var/www/html/.env"
 
+# Se não existe .env, gera a partir das variáveis de ambiente
 if [ ! -f "$ENV_FILE" ]; then
-    echo "ERRO: Arquivo .env não encontrado. Crie um .env baseado em .env.example."
-    exit 1
+    echo "INFO: .env não encontrado. Gerando a partir das variáveis de ambiente..."
+    printenv | grep -E '^(APP_|DB_|MYSQL_|CACHE_|QUEUE_|SESSION_|MAIL_|AWS_|REDIS_)' > "$ENV_FILE"
+    echo "INFO: .env gerado com sucesso."
 fi
 
 REQUIRED_VARS=(
@@ -18,30 +20,21 @@ REQUIRED_VARS=(
 
 MISSING_VARS=()
 
-# 1. Validação normal das outras variáveis
 for VAR in "${REQUIRED_VARS[@]}"; do
-    LINE=$(grep -E "^${VAR}=" "$ENV_FILE" || true)
-    VALUE="${LINE#*=}"
-    VALUE=$(echo "$VALUE" | tr -d '\r')
-
-    # Se linha não existe ou valor está vazio → erro
-    if [ -z "$LINE" ] || [ -z "$VALUE" ]; then
+    VALUE="${!VAR}"
+    if [ -z "$VALUE" ]; then
         MISSING_VARS+=("$VAR")
     fi
 done
 
-# 2. Validação ESPECIAL de APP_KEY
-# Regra: APP_KEY precisa EXISTIR, mesmo que vazia
 APP_KEY_LINE=$(grep -E "^APP_KEY=" "$ENV_FILE" || true)
-
 if [ -z "$APP_KEY_LINE" ]; then
-    echo "ERRO: APP_KEY deve existir no .env (pode ser vazia: APP_KEY=, ou conter uma chave válida)."
+    echo "ERRO: APP_KEY deve existir no .env"
     MISSING_VARS+=("APP_KEY")
 fi
 
-# 3. Saída final
 if [ "${#MISSING_VARS[@]}" -ne 0 ]; then
-    echo "Variáveis obrigatórias ausentes ou inválidas no .env:"
+    echo "Variáveis obrigatórias ausentes:"
     for VAR in "${MISSING_VARS[@]}"; do
         echo "  - $VAR"
     done
