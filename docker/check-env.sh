@@ -6,8 +6,10 @@ ENV_FILE="/var/www/html/.env"
 # Se não existe .env, gera a partir das variáveis de ambiente
 if [ ! -f "$ENV_FILE" ]; then
     echo "INFO: .env não encontrado. Gerando a partir das variáveis de ambiente..."
-    printenv | grep -E '^(APP_|DB_|MYSQL_|CACHE_|QUEUE_|SESSION_|MAIL_|AWS_|REDIS_)' > "$ENV_FILE"
-    echo "INFO: .env gerado com sucesso."
+    printenv | grep -E '^(APP_|DB_|MYSQL_|CACHE_|QUEUE_|SESSION_|MAIL_|AWS_|REDIS_)' > /tmp/.env.tmp
+    cp /tmp/.env.tmp "$ENV_FILE" 2>/dev/null || {
+        echo "AVISO: Não foi possível criar .env em disco. Usando variáveis de ambiente diretamente."
+    }
 fi
 
 REQUIRED_VARS=(
@@ -27,9 +29,8 @@ for VAR in "${REQUIRED_VARS[@]}"; do
     fi
 done
 
-APP_KEY_LINE=$(grep -E "^APP_KEY=" "$ENV_FILE" || true)
-if [ -z "$APP_KEY_LINE" ]; then
-    echo "ERRO: APP_KEY deve existir no .env"
+if [ -z "${APP_KEY}" ]; then
+    echo "ERRO: APP_KEY deve existir nas variáveis de ambiente"
     MISSING_VARS+=("APP_KEY")
 fi
 
