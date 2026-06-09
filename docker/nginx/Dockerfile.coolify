@@ -1,7 +1,11 @@
 ﻿FROM nginx:1.25-alpine
 
-COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
-
 WORKDIR /var/www/html
+
+# Copia os arquivos do projeto
+COPY . /var/www/html
+
+# Copia a config do Nginx
+COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
