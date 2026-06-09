@@ -7,7 +7,6 @@ services:
                 UID: 1000
                 GID: 33
         image: controlplus-app
-        container_name: backend
         env_file: .env
         depends_on:
             - db
@@ -20,12 +19,11 @@ services:
         build:
             context: .
             dockerfile: docker/nginx/Dockerfile.coolify
-        container_name: frontend
         env_file: .env
         depends_on:
             - app
-        ports:
-            - "8081:80"
+        expose:
+            - "80"
         volumes:
             - .:/var/www/html:cached
         networks:
@@ -33,7 +31,6 @@ services:
 
     db:
         image: mysql:8.0
-        container_name: controlplus-db
         env_file: .env
         restart: unless-stopped
         command: >
@@ -43,8 +40,6 @@ services:
             MYSQL_USER: ${DB_USERNAME}
             MYSQL_PASSWORD: ${DB_PASSWORD}
             MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-        ports:
-            - "3306:3306"
         volumes:
             - db_data:/var/lib/mysql
         networks:
