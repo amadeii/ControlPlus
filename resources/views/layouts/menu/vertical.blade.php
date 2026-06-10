@@ -381,14 +381,6 @@
                 @endif
 
                 <li class="side-nav-item">
-                    <a href="{{ route('registro') }}" aria-expanded="false" aria-controls="sidebarPages"
-                        class="side-nav-link">
-                        <i class="ri-bookmark-3-fill"></i>
-                        <span>Registro de Software</span>
-                    </a>
-                </li>
-
-                <li class="side-nav-item">
                     <a href="{{ route('sugestao.index') }}" aria-expanded="false" aria-controls="sidebarPages"
                         class="side-nav-link">
                         <i class="ri-code-s-slash-line"></i>

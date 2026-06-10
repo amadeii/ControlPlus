@@ -42,7 +42,6 @@ Route::get('/ordem-servico-link/{hash}', 'OrdemServicoViewController@index')->na
 Route::post('/cotacoes-resposta-store', 'CotacaoRespostaController@store')->name('cotacoes.resposta-store');
 Route::get('/cotacoes-finish', 'CotacaoRespostaController@finish')->name('cotacoes.finish');
 Route::get('/imprimir-nfce/{chave}', 'ImprimirNfceController@imprimir');
-Route::get('/registro', 'RegistroController@index')->name('registro');
 
 Route::get('/reserva-cliente/{codigo}', 'ReservaClienteController@index');
 Route::post('/reserva-checkin-start-cliente/{id}', 'ReservaClienteController@checkinStart')->name('reservas.checkin-start-cliente');
