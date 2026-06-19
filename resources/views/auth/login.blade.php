@@ -219,7 +219,7 @@
             <h4 class="mt-0 superstore-login-title">Login</h4>
             <p class="text-muted mb-4">Digite seu endere&ccedil;o de email e senha para acessar a conta.</p>
 
-            <form method="POST" action="{{ route('login') }}" id="form-login">
+            <form method="POST" action="{{ route('login') }}">
                 @csrf
 
                 <div class="mb-3">
@@ -277,7 +277,12 @@
     function login(email, senha) {
         $('#email').val(email)
         $('#password').val(senha)
-        $('#form-login').submit()
+        const form = document.querySelector('form[method="POST"]')
+        if (form.requestSubmit) {
+            form.requestSubmit()
+            return
+        }
+        form.submit()
     }
     $('html').attr('data-bs-theme', '{{ __dataThemeDefault() }}')
 </script>
