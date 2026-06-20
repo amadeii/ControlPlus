@@ -147,6 +147,10 @@
             text-decoration: underline;
         }
 
+        .superstore-support-link i {
+            font-size: 1.15rem;
+        }
+
         .superstore-login-submit {
             min-height: 44px;
             border: 0;
@@ -239,8 +243,9 @@
                             </div>
                         </div>
                         <br>
-                        <a href="https://wa.me/554185117177">WhatsApp
-                            <strong>41 8511-7177</strong></a>
+                        <a href="https://wa.me/554185117177" aria-label="WhatsApp" title="WhatsApp">
+                            <i class="ri-whatsapp-fill" aria-hidden="true"></i>
+                        </a>
                     </div>
                 </div>
             @endif
@@ -291,9 +296,9 @@
                         Acessar</button>
                 </div>
                 <div class="mt-3">
-                    <a class="superstore-support-link" target="_blank" href="https://wa.me/554185117177"><i
-                            class="ri-whatsapp-fill"></i>
-                        Suporte 41 8511-7177</a>
+                    <a class="superstore-support-link" target="_blank" href="https://wa.me/554185117177"
+                        aria-label="Suporte via WhatsApp" title="Suporte via WhatsApp"><i
+                            class="ri-whatsapp-fill" aria-hidden="true"></i></a>
                 </div>
             </form>
 

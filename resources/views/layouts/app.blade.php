@@ -443,8 +443,9 @@
                     </div>
                     <div class="modal-body">
                         <h4>Marcos Mello - Slym Software</h4>
-                        <a href="https://wa.me/554185117177">WhatsApp
-                            <strong>41 8511-7177</strong></a>
+                        <a href="https://wa.me/554185117177" aria-label="WhatsApp" title="WhatsApp">
+                            <i class="ri-whatsapp-fill" aria-hidden="true"></i>
+                        </a>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Fechar</button>
