@@ -93,6 +93,36 @@
             box-shadow: 0 0 0 0.18rem rgba(43, 124, 255, 0.15);
         }
 
+        .superstore-password-field {
+            position: relative;
+        }
+
+        .superstore-password-field .form-control {
+            padding-right: 48px;
+        }
+
+        .superstore-password-toggle {
+            position: absolute;
+            top: 50%;
+            right: 12px;
+            transform: translateY(-50%);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            color: #64748b;
+            cursor: pointer;
+        }
+
+        .superstore-password-toggle:hover,
+        .superstore-password-toggle:focus {
+            color: #265ed7;
+        }
+
         .superstore-password-head {
             display: flex;
             align-items: center;
@@ -209,9 +239,8 @@
                             </div>
                         </div>
                         <br>
-                        <a
-                            href="https://api.whatsapp.com/send/?phone=5541985117177&text&type=phone_number&app_absent=0">WhatsApp
-                            <strong>43920004769</strong></a>
+                        <a href="https://wa.me/554185117177">WhatsApp
+                            <strong>41 8511-7177</strong></a>
                     </div>
                 </div>
             @endif
@@ -233,8 +262,14 @@
                         <a href="{{ route('password.request') }}" class="superstore-forgot-link"><small>Esqueceu sua
                                 senha?</small></a>
                     </div>
-                    <input class="form-control" type="password" name="password" required value="{{ $pass }}"
-                        id="password" placeholder="Digite sua senha">
+                    <div class="superstore-password-field">
+                        <input class="form-control" type="password" name="password" required value="{{ $pass }}"
+                            id="password" placeholder="Digite sua senha">
+                        <button class="superstore-password-toggle" type="button" id="toggle-password"
+                            aria-label="Mostrar senha" aria-pressed="false">
+                            <i class="ri-eye-line" aria-hidden="true"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="mb-3">
                     <div class="form-check">
@@ -256,9 +291,9 @@
                         Acessar</button>
                 </div>
                 <div class="mt-3">
-                    <a class="superstore-support-link" target="_blank" href="https://wa.me/55{{ env('APP_FONE') }}"><i
+                    <a class="superstore-support-link" target="_blank" href="https://wa.me/554185117177"><i
                             class="ri-whatsapp-fill"></i>
-                        Suporte</a>
+                        Suporte 41 8511-7177</a>
                 </div>
             </form>
 
@@ -283,6 +318,22 @@
             return
         }
         form.submit()
+    }
+    const togglePasswordButton = document.getElementById('toggle-password')
+    const passwordInput = document.getElementById('password')
+    if (togglePasswordButton && passwordInput) {
+        togglePasswordButton.addEventListener('click', function () {
+            const showingPassword = passwordInput.type === 'text'
+            passwordInput.type = showingPassword ? 'password' : 'text'
+            this.setAttribute('aria-label', showingPassword ? 'Mostrar senha' : 'Ocultar senha')
+            this.setAttribute('aria-pressed', showingPassword ? 'false' : 'true')
+
+            const icon = this.querySelector('i')
+            if (icon) {
+                icon.classList.toggle('ri-eye-line', showingPassword)
+                icon.classList.toggle('ri-eye-off-line', !showingPassword)
+            }
+        })
     }
     $('html').attr('data-bs-theme', '{{ __dataThemeDefault() }}')
 </script>
