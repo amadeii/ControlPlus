@@ -1601,3 +1601,45 @@ $('.btn-toggle-filtros').on('click', function () {
     }
 });
 
+function setupAppTableScroll() {
+    document.querySelectorAll('.app-table-scroll').forEach(function (area) {
+        const wrapper = area.querySelector('.app-table-scroll-wrapper');
+
+        if (!wrapper || area.dataset.appTableScrollReady === '1') {
+            return;
+        }
+
+        let controls = area.querySelector('.app-table-scroll-controls');
+        if (!controls) {
+            controls = document.createElement('div');
+            controls.className = 'app-table-scroll-controls';
+            controls.setAttribute('aria-label', 'Navegacao horizontal da tabela');
+            controls.innerHTML = '<button type="button" class="app-table-scroll-btn app-table-scroll-left" aria-label="Rolar tabela para a esquerda"><i class="ri-arrow-left-s-line"></i></button><button type="button" class="app-table-scroll-btn app-table-scroll-right" aria-label="Rolar tabela para a direita"><i class="ri-arrow-right-s-line"></i></button>';
+            area.insertBefore(controls, wrapper);
+        }
+
+        const leftButton = controls.querySelector('.app-table-scroll-left');
+        const rightButton = controls.querySelector('.app-table-scroll-right');
+
+        if (!leftButton || !rightButton) {
+            return;
+        }
+
+        leftButton.addEventListener('click', function () {
+            wrapper.scrollBy({ left: -500, behavior: 'smooth' });
+        });
+
+        rightButton.addEventListener('click', function () {
+            wrapper.scrollBy({ left: 500, behavior: 'smooth' });
+        });
+
+        area.dataset.appTableScrollReady = '1';
+    });
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupAppTableScroll);
+} else {
+    setupAppTableScroll();
+}
+

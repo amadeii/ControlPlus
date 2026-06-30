@@ -127,9 +127,10 @@
                 </div>
                 @endif
 
-                <div class="col-md-12 mt-3">
-                    <div class="table-responsive">
-                        <table class="table table-striped table-centered mb-0">
+                <div class="col-md-12 mt-3 app-table-scroll">
+                    @include('components.app-table-scroll-controls')
+                    <div class="table-responsive app-table-scroll-wrapper">
+                        <table class="table table-striped table-centered app-table-scroll-table app-table-scroll-table-xl mb-0">
                             <thead class="table-dark">
                                 <tr>
                                     <th>Ações</th>

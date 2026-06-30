@@ -53,6 +53,86 @@
     z-index: 1062;
 }
 
+/* Wide table scroll pattern: opt-in only inside page content tables */
+.app-table-scroll {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.app-table-scroll-wrapper {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto !important;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    padding-bottom: .5rem;
+}
+
+.app-table-scroll-wrapper table {
+    min-width: max-content;
+    width: max-content;
+}
+
+.app-table-scroll-table {
+    width: max-content !important;
+}
+
+.app-table-scroll-table-md {
+    min-width: 1200px;
+}
+
+.app-table-scroll-table-lg {
+    min-width: 1400px;
+}
+
+.app-table-scroll-table-xl {
+    min-width: 1800px;
+}
+
+.app-table-scroll th,
+.app-table-scroll td {
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.app-table-scroll .dropdown-menu {
+    white-space: normal;
+}
+
+.app-table-scroll-controls {
+    display: flex !important;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.app-table-scroll-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 50%;
+    background: #2563eb;
+    color: #fff;
+    font-size: 20px;
+    box-shadow: 0 10px 24px rgba(37, 99, 235, .25);
+}
+
+.app-table-scroll-btn:hover {
+    background: #1d4ed8;
+}
+
+@media (max-width: 575.98px) {
+    .app-table-scroll-controls {
+        justify-content: flex-start;
+    }
+}
+
 /* Product screens: keep wide product tables/forms inside their own area */
 .produtos-table-area {
     width: 100%;

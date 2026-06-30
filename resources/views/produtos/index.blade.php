@@ -37,44 +37,6 @@
     .produto-card:hover .produto-img {
         transform: scale(1.05);
     }
-    .produtos-table-area {
-        width: 100%;
-        max-width: 100%;
-        overflow: hidden;
-    }
-    .produtos-table-wrapper {
-        display: block;
-        width: 100%;
-        max-width: 100%;
-        overflow-x: auto !important;
-        overflow-y: visible;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: thin;
-    }
-    .produtos-table-wrapper table {
-        min-width: 1800px;
-        width: max-content !important;
-    }
-    .produtos-scroll-controls {
-        display: flex !important;
-        justify-content: flex-end;
-        gap: 8px;
-        margin-bottom: 8px;
-    }
-    .produtos-scroll-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 36px;
-        height: 36px;
-        border: 0;
-        border-radius: 50%;
-        background: #2563eb;
-        color: #fff;
-        font-size: 20px;
-        box-shadow: 0 10px 24px rgba(37, 99, 235, .25);
-    }
-
 </style>
 @endsection
 @section('content')
@@ -289,33 +251,6 @@
         .fail((e) => {
             console.log(e)
         })
-    }
-
-    function setupProdutosTableScroll() {
-        const wrapper = document.querySelector('.produtos-table-wrapper');
-        const controls = document.querySelector('.produtos-scroll-controls');
-        const leftButton = document.querySelector('.produtos-scroll-left');
-        const rightButton = document.querySelector('.produtos-scroll-right');
-
-        if (!wrapper || !controls || !leftButton || !rightButton) {
-            return;
-        }
-
-        const scrollTable = (direction) => {
-            wrapper.scrollBy({
-                left: 500 * direction,
-                behavior: 'smooth'
-            });
-        };
-
-        leftButton.addEventListener('click', () => scrollTable(-1));
-        rightButton.addEventListener('click', () => scrollTable(1));
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', setupProdutosTableScroll);
-    } else {
-        setupProdutosTableScroll();
     }
 
 </script>

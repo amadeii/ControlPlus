@@ -96,9 +96,10 @@
                     </div>
                 </div>
                 @endif
-                <div class="col-lg-12 mt-4">
-                    <div class="table-responsive">
-                        <table class="table table-striped table-centered mb-0">
+                <div class="col-lg-12 mt-4 app-table-scroll">
+                    @include('components.app-table-scroll-controls')
+                    <div class="table-responsive app-table-scroll-wrapper">
+                        <table class="table table-striped table-centered app-table-scroll-table app-table-scroll-table-xl mb-0">
                             <thead class="table-dark">
                                 <tr>
                                     <th>#</th>

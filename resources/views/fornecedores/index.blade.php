@@ -53,9 +53,10 @@
                     </div>
                     {!!Form::close()!!}
                 </div>
-                <div class="col-md-12 mt-3">
-                    <div class="table-responsive">
-                        <table class="table table-striped table-centered mb-0">
+                <div class="col-md-12 mt-3 app-table-scroll">
+                    @include('components.app-table-scroll-controls')
+                    <div class="table-responsive app-table-scroll-wrapper">
+                        <table class="table table-striped table-centered app-table-scroll-table app-table-scroll-table-md mb-0">
                             <thead class="table-dark">
                                 <tr>
                                     @can('fornecedores_delete')
@@ -124,18 +125,18 @@
                                 @endforelse
                             </tbody>
                         </table>
-                        <br>
-                        @can('fornecedores_delete')
-                        <form action="{{ route('fornecedores.destroy-select') }}" method="post" id="form-delete-select">
-                            @method('delete')
-                            @csrf
-                            <div></div>
-                            <button type="button" class="btn btn-danger btn-sm btn-delete-all" disabled>
-                                <i class="ri-close-circle-line"></i> Remover selecionados
-                            </button>
-                        </form>
-                        @endcan
                     </div>
+                    <br>
+                    @can('fornecedores_delete')
+                    <form action="{{ route('fornecedores.destroy-select') }}" method="post" id="form-delete-select">
+                        @method('delete')
+                        @csrf
+                        <div></div>
+                        <button type="button" class="btn btn-danger btn-sm btn-delete-all" disabled>
+                            <i class="ri-close-circle-line"></i> Remover selecionados
+                        </button>
+                    </form>
+                    @endcan
                 </div>
                 <br>
                 {!! $data->appends(request()->all())->links() !!}

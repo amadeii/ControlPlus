@@ -1,16 +1,9 @@
-<div class="col-md-12 mt-3 produtos-table-area">
+<div class="col-md-12 mt-3 produtos-table-area app-table-scroll">
     <h6>Total de registros: <strong>{{ $data->total() }}</strong></h6>
-    <div class="produtos-scroll-controls" aria-label="Navegacao horizontal da tabela de produtos">
-        <button type="button" class="produtos-scroll-btn produtos-scroll-left" aria-label="Rolar tabela para a esquerda">
-            <i class="ri-arrow-left-s-line"></i>
-        </button>
-        <button type="button" class="produtos-scroll-btn produtos-scroll-right" aria-label="Rolar tabela para a direita">
-            <i class="ri-arrow-right-s-line"></i>
-        </button>
-    </div>
-    <div class="produtos-table-wrapper dropdown-fix">
+    @include('components.app-table-scroll-controls')
+    <div class="produtos-table-wrapper app-table-scroll-wrapper dropdown-fix">
 
-        <table class="table table-striped table-centered table-nowrap produtos-table mb-0">
+        <table class="table table-striped table-centered table-nowrap produtos-table app-table-scroll-table app-table-scroll-table-xl mb-0">
                 <thead class="table-dark">
                     <tr>
                         @can('produtos_delete')

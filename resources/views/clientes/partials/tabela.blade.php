@@ -1,6 +1,8 @@
-<div class="col-md-12 mt-3 table-responsive">
+<div class="col-md-12 mt-3 app-table-scroll">
     <h5>Total de registros: <strong>{{ $data->total() }}</strong></h5>
-    <table class="table table-striped table-centered mb-0">
+    @include('components.app-table-scroll-controls')
+    <div class="table-responsive app-table-scroll-wrapper">
+    <table class="table table-striped table-centered app-table-scroll-table app-table-scroll-table-lg mb-0">
         <thead class="table-dark">
             <tr>
                 @can('clientes_delete')
@@ -88,5 +90,6 @@
             @endforelse
         </tbody>
     </table>
+    </div>
     
 </div>

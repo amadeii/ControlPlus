@@ -65,9 +65,10 @@
                     </div>
                     {!!Form::close()!!}
                 </div>
-                <div class="col-12 mt-3">
-                    <div class="table-responsive">
-                        <table class="table table-centered">
+                <div class="col-12 mt-3 app-table-scroll">
+                    @include('components.app-table-scroll-controls')
+                    <div class="table-responsive app-table-scroll-wrapper">
+                        <table class="table table-centered app-table-scroll-table app-table-scroll-table-md">
                             <thead class="table-dark">
                                 <tr>
                                     <th>Código</th>

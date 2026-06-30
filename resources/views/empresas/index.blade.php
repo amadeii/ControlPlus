@@ -54,10 +54,11 @@
                     </div>
                     {!!Form::close()!!}
                 </div>
-                <div class="col-md-12 mt-3">
+                <div class="col-md-12 mt-3 app-table-scroll">
                     <h5>Total de empresas: <strong class="text-success">{{ $data->total() }}</strong></h5>
-                    <div class="table-responsive">
-                        <table class="table table-centered">
+                    @include('components.app-table-scroll-controls')
+                    <div class="table-responsive app-table-scroll-wrapper">
+                        <table class="table table-centered app-table-scroll-table app-table-scroll-table-lg">
                             <thead class="table-dark">
                                 <tr>
                                     <th>Razão social</th>
