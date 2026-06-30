@@ -62,37 +62,19 @@ $(function() {
     }, 1100)
 })
 
-// Validação de SKU no submit — obrigatório apenas em novos cadastros (data-sku-required="1")
-$(document).on('submit', '#form-produto', function (e) {
+// O envio do produto deve seguir o fluxo normal do Laravel.
+$(document).on('submit', '#form-produto', function () {
     clearProdutoLoading();
 
     var $skuInput = $('#inp-sku');
     if ($skuInput.length === 0) return true;
 
-    var isRequired = $skuInput.data('sku-required') == '1';
-    var valor = $skuInput.val().trim();
+    var valor = $skuInput.val().trim().toUpperCase().replace(/[^A-Z0-9\-_]/g, '');
+    $skuInput.val(valor);
+    $skuInput.removeClass('is-invalid');
+    $skuInput.next('.invalid-feedback').remove();
 
-    if (isRequired && valor === '') {
-        e.preventDefault();
-        clearProdutoLoading();
-        $skuInput.addClass('is-invalid');
-        if ($skuInput.next('.invalid-feedback').length === 0) {
-            $skuInput.after('<div class="invalid-feedback">SKU é obrigatório para novos produtos.</div>');
-        }
-        $skuInput[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return false;
-    }
-
-    if (valor !== '' && !/^[A-Za-z0-9\-_]+$/.test(valor)) {
-        e.preventDefault();
-        clearProdutoLoading();
-        $skuInput.addClass('is-invalid');
-        if ($skuInput.next('.invalid-feedback').length === 0) {
-            $skuInput.after('<div class="invalid-feedback">SKU deve conter apenas letras, números, hífen ou sublinhado.</div>');
-        }
-        $skuInput[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return false;
-    }
+    return true;
 });
 
 // Normaliza SKU para maiúsculas e remove caracteres inválidos ao sair do campo

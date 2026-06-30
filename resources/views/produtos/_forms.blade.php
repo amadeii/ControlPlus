@@ -1523,7 +1523,9 @@
             return;
         }
 
-        form.trigger('submit');
+        if (formElement) {
+            formElement.submit();
+        }
     });
 
     $(document).on("blur", "#inp-cfop_estadual", function () {
