@@ -1,6 +1,14 @@
 <div class="col-md-12 mt-3 produtos-table-area">
     <h6>Total de registros: <strong>{{ $data->total() }}</strong></h6>
-    <div class="produtos-table-wrapper table-responsive dropdown-fix">
+    <div class="produtos-scroll-controls" aria-label="Navegacao horizontal da tabela de produtos">
+        <button type="button" class="produtos-scroll-btn produtos-scroll-left" aria-label="Rolar tabela para a esquerda">
+            <i class="ri-arrow-left-s-line"></i>
+        </button>
+        <button type="button" class="produtos-scroll-btn produtos-scroll-right" aria-label="Rolar tabela para a direita">
+            <i class="ri-arrow-right-s-line"></i>
+        </button>
+    </div>
+    <div class="produtos-table-wrapper dropdown-fix">
 
         <table class="table table-striped table-centered table-nowrap produtos-table mb-0">
                 <thead class="table-dark">
@@ -296,13 +304,5 @@
                 </tbody>
 
         </table>
-    </div>
-    <div class="produtos-scroll-controls hidden" aria-label="Navegacao horizontal da tabela de produtos">
-        <button type="button" class="produtos-scroll-btn produtos-scroll-left" aria-label="Rolar tabela para a esquerda">
-            <i class="ri-arrow-left-s-line"></i>
-        </button>
-        <button type="button" class="produtos-scroll-btn produtos-scroll-right" aria-label="Rolar tabela para a direita">
-            <i class="ri-arrow-right-s-line"></i>
-        </button>
     </div>
 </div>

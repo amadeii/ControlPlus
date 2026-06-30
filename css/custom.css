@@ -55,15 +55,16 @@
 
 /* Product screens: keep wide product tables/forms inside their own area */
 .produtos-table-area {
-    position: relative;
     width: 100%;
     max-width: 100%;
+    overflow: hidden;
 }
 
 .produtos-table-wrapper {
+    display: block;
     width: 100%;
     max-width: 100%;
-    overflow-x: auto;
+    overflow-x: auto !important;
     overflow-y: visible;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
@@ -71,8 +72,8 @@
 }
 
 .produtos-table {
-    min-width: 1680px;
-    width: max-content;
+    min-width: 1800px;
+    width: max-content !important;
 }
 
 .produtos-table th,
@@ -104,14 +105,10 @@ html[data-bs-theme="dark"] .produtos-table .first-col {
 }
 
 .produtos-scroll-controls {
-    display: flex;
+    display: flex !important;
     justify-content: flex-end;
-    gap: .5rem;
-    margin-top: .5rem;
-}
-
-.produtos-scroll-controls.hidden {
-    display: none !important;
+    gap: 8px;
+    margin-bottom: 8px;
 }
 
 .produtos-scroll-btn {
@@ -204,6 +201,6 @@ html[data-bs-theme="dark"] .produtos-table .first-col {
     }
 
     .produtos-table {
-        min-width: 1400px;
+        min-width: 1800px;
     }
 }

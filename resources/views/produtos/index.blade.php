@@ -37,6 +37,43 @@
     .produto-card:hover .produto-img {
         transform: scale(1.05);
     }
+    .produtos-table-area {
+        width: 100%;
+        max-width: 100%;
+        overflow: hidden;
+    }
+    .produtos-table-wrapper {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto !important;
+        overflow-y: visible;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+    }
+    .produtos-table-wrapper table {
+        min-width: 1800px;
+        width: max-content !important;
+    }
+    .produtos-scroll-controls {
+        display: flex !important;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+    .produtos-scroll-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border: 0;
+        border-radius: 50%;
+        background: #2563eb;
+        color: #fff;
+        font-size: 20px;
+        box-shadow: 0 10px 24px rgba(37, 99, 235, .25);
+    }
 
 </style>
 @endsection
@@ -264,33 +301,15 @@
             return;
         }
 
-        const updateControls = () => {
-            const hasOverflow = wrapper.scrollWidth > wrapper.clientWidth + 2;
-            controls.classList.toggle('hidden', !hasOverflow);
-
-            if (!hasOverflow) {
-                return;
-            }
-
-            leftButton.disabled = wrapper.scrollLeft <= 5;
-            rightButton.disabled = wrapper.scrollLeft + wrapper.clientWidth >= wrapper.scrollWidth - 5;
-        };
-
         const scrollTable = (direction) => {
             wrapper.scrollBy({
-                left: Math.round(wrapper.clientWidth * 0.75) * direction,
+                left: 500 * direction,
                 behavior: 'smooth'
             });
-
-            setTimeout(updateControls, 350);
         };
 
         leftButton.addEventListener('click', () => scrollTable(-1));
         rightButton.addEventListener('click', () => scrollTable(1));
-        wrapper.addEventListener('scroll', updateControls, { passive: true });
-        window.addEventListener('resize', updateControls);
-        window.addEventListener('load', () => setTimeout(updateControls, 200));
-        setTimeout(updateControls, 200);
     }
 
     if (document.readyState === 'loading') {
