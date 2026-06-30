@@ -1,9 +1,9 @@
 <div class="col-md-12 mt-3">
     <h6>Total de registros: <strong>{{ $data->total() }}</strong></h6>
-    <div class="table-responsive">
-        <div class="tabela-scroll" style="overflow-x:auto;">
+    <div class="table-responsive produtos-table-responsive dropdown-fix">
+        <div class="tabela-scroll produtos-table-scroll">
 
-            <table class="table table-striped table-centered mb-0">
+            <table class="table table-striped table-centered table-nowrap produtos-table mb-0">
                 <thead class="table-dark">
                     <tr>
                         @can('produtos_delete')
@@ -58,7 +58,7 @@
                         </td>
                         @endcan
 
-                        <td class="text-start d-none d-md-table-cell">
+                        <td class="text-start d-none d-md-table-cell produtos-table-actions">
                             <div class="dropdown">
                                 <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-display="static">
                                     Ações

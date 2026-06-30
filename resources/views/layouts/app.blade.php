@@ -691,7 +691,7 @@
             @endif
 
             @if (!Auth::user()->sidebar_active)
-                $(html).attr('data-sidenav-size', 'condensed')
+                $('html').attr('data-sidenav-size', 'condensed')
             @endif
 
             @if (session()->has('flash_modal_crm'))
@@ -706,14 +706,23 @@
                 modalAlertaCertificado()
             @endif
 
-            $(html).attr('data-topbar-color', '{{ __dataTopBar() }}')
-            $(html).attr('data-menu-color', '{{ __dataMenuBar() }}')
-            $(html).attr('data-bs-theme', '{{ __dataThemeDefault() }}')
+            $('html').attr('data-topbar-color', '{{ __dataTopBar() }}')
+            $('html').attr('data-menu-color', '{{ __dataMenuBar() }}')
+            $('html').attr('data-bs-theme', '{{ __dataThemeDefault() }}')
+
+            function hideInitialLoader() {
+                const loader = document.querySelector(".loader")
+                if (loader) {
+                    loader.classList.add("loader--hidden")
+                }
+            }
+
+            window.addEventListener("DOMContentLoaded", () => {
+                setTimeout(hideInitialLoader, 100)
+            })
 
             window.addEventListener("load", () => {
-                setTimeout(() => {
-                    document.querySelector(".loader").classList.add("loader--hidden")
-                }, 100)
+                setTimeout(hideInitialLoader, 100)
             })
 
             @if (__dataTopBar() == 'brand')

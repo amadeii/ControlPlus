@@ -1489,7 +1489,7 @@
 </div>
 <hr class="mt-4">
 @if(!isset($not_submit))
-<div class="col-12" style="text-align: right;">
+<div class="col-12 produto-form-actions">
     <button type="button" id="salvar-adicionar-outro" class="btn btn-primary btn-action px-5">Salvar e adicionar outro</button>
     <button type="submit" class="btn btn-success btn-action px-5">Salvar</button>
 </div>
@@ -1516,7 +1516,14 @@
         const form = $('#form-produto');
         form.find('input[name="adicionar_outro"]').remove();
         form.append(`<input type="hidden" name="adicionar_outro" value="1">`);
-        form.submit();
+        const formElement = form[0];
+
+        if (formElement && formElement.requestSubmit) {
+            formElement.requestSubmit();
+            return;
+        }
+
+        form.trigger('submit');
     });
 
     $(document).on("blur", "#inp-cfop_estadual", function () {

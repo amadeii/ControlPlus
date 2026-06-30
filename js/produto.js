@@ -1,4 +1,13 @@
 var EDIT = 0
+
+function produtoBody() {
+    window.$body = window.$body || $("body");
+    return window.$body;
+}
+
+function hideProdutoLoading() {
+    produtoBody().removeClass("loading");
+}
 $(function() {
     changeDericadoPetroleo()
     changeCardapio()
@@ -140,6 +149,12 @@ $('.btn-action').click(() => {
     addClassRequired()
 })
 
+$(document).on('submit', '#form-produto', function () {
+    produtoBody().addClass("loading");
+});
+
+window.addEventListener("pageshow", hideProdutoLoading);
+
 function addClassRequired() {
     let isInalid = false
     $('.tab-fiscal').trigger('click')
@@ -166,8 +181,15 @@ function addClassRequired() {
             audioError()
             campos = campos.substring(0, campos.length-2)
             toastr.error('Campos obrigatórios não preenchidos: ' + campos);
+            hideProdutoLoading()
         }else{
-            $body.addClass("loading");
+            const form = document.getElementById('form-produto');
+            if (form && !form.checkValidity()) {
+                hideProdutoLoading()
+                return;
+            }
+            produtoBody().addClass("loading");
+            setTimeout(hideProdutoLoading, 12000);
         }
     }, 50)
 }

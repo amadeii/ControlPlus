@@ -180,16 +180,43 @@ $(function () {
     $(".cfop").mask("0000", { reverse: true });
     $(".ie").mask("00000000000000", { reverse: true });
 
-    $body = $("body");
+    window.$body = $("body");
+    $body = window.$body;
+    let loadingFallbackTimer = null;
+    const productLoadingPage = /^\/produtos(\/|$)/.test(window.location.pathname);
+    const loadingFallbackTimeout = productLoadingPage ? 10000 : 30000;
+
+    function clearLoadingFallbackTimer() {
+        if (loadingFallbackTimer) {
+            clearTimeout(loadingFallbackTimer);
+            loadingFallbackTimer = null;
+        }
+    }
+
+    function hideGlobalLoading() {
+        clearLoadingFallbackTimer();
+        $body.removeClass("loading");
+    }
+
+    function startGlobalLoadingFallback() {
+        clearLoadingFallbackTimer();
+        loadingFallbackTimer = setTimeout(function () {
+            if ($body.hasClass("loading")) {
+                console.warn("Loading removido por fallback apos requisicao AJAX sem finalizacao visivel.");
+                $body.removeClass("loading");
+            }
+        }, loadingFallbackTimeout);
+    }
 
     $(document).on({
         ajaxStart: function () {
             $body.addClass("loading");
+            startGlobalLoadingFallback();
         },
-        ajaxStop: function () {
-            $body.removeClass("loading");
-        }
+        ajaxStop: hideGlobalLoading
     });
+
+    window.addEventListener("pageshow", hideGlobalLoading);
 
     $("input[required], select[required], textarea[required]")
     .siblings("label")
@@ -1522,3 +1549,53 @@ function notifications(){
         }
     }
 }
+
+function setupTabelaScroll() {
+    const wrappers = document.querySelectorAll(".tabela-scroll");
+
+    wrappers.forEach((wrapper) => {
+        const btn = document.getElementById("scrollToggle2");
+        let direcao = 1;
+
+        function verificarVisibilidade() {
+            if (!btn) {
+                return;
+            }
+
+            if (wrapper.scrollWidth > wrapper.clientWidth + 20) {
+                btn.classList.remove("hidden");
+            } else {
+                btn.classList.add("hidden");
+            }
+        }
+
+        if (btn) {
+            btn.addEventListener("click", () => {
+                wrapper.scrollBy({
+                    left: 360 * direcao,
+                    behavior: "smooth"
+                });
+
+                setTimeout(() => {
+                    const chegouInicio = wrapper.scrollLeft <= 5;
+                    const chegouFim = wrapper.scrollLeft + wrapper.clientWidth >= wrapper.scrollWidth - 5;
+
+                    if (chegouFim) {
+                        direcao = -1;
+                        btn.innerHTML = '<i class="ri-arrow-left-circle-line"></i>';
+                    } else if (chegouInicio) {
+                        direcao = 1;
+                        btn.innerHTML = '<i class="ri-arrow-right-circle-line"></i>';
+                    }
+                }, 400);
+            });
+        }
+
+        wrapper.addEventListener("scroll", verificarVisibilidade, { passive: true });
+        window.addEventListener("resize", verificarVisibilidade);
+        window.addEventListener("load", () => setTimeout(verificarVisibilidade, 450));
+        setTimeout(verificarVisibilidade, 450);
+    });
+}
+
+setupTabelaScroll();
