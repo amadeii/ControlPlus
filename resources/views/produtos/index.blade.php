@@ -254,5 +254,50 @@
         })
     }
 
+    function setupProdutosTableScroll() {
+        const wrapper = document.querySelector('.produtos-table-wrapper');
+        const controls = document.querySelector('.produtos-scroll-controls');
+        const leftButton = document.querySelector('.produtos-scroll-left');
+        const rightButton = document.querySelector('.produtos-scroll-right');
+
+        if (!wrapper || !controls || !leftButton || !rightButton) {
+            return;
+        }
+
+        const updateControls = () => {
+            const hasOverflow = wrapper.scrollWidth > wrapper.clientWidth + 2;
+            controls.classList.toggle('hidden', !hasOverflow);
+
+            if (!hasOverflow) {
+                return;
+            }
+
+            leftButton.disabled = wrapper.scrollLeft <= 5;
+            rightButton.disabled = wrapper.scrollLeft + wrapper.clientWidth >= wrapper.scrollWidth - 5;
+        };
+
+        const scrollTable = (direction) => {
+            wrapper.scrollBy({
+                left: Math.round(wrapper.clientWidth * 0.75) * direction,
+                behavior: 'smooth'
+            });
+
+            setTimeout(updateControls, 350);
+        };
+
+        leftButton.addEventListener('click', () => scrollTable(-1));
+        rightButton.addEventListener('click', () => scrollTable(1));
+        wrapper.addEventListener('scroll', updateControls, { passive: true });
+        window.addEventListener('resize', updateControls);
+        window.addEventListener('load', () => setTimeout(updateControls, 200));
+        setTimeout(updateControls, 200);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupProdutosTableScroll);
+    } else {
+        setupProdutosTableScroll();
+    }
+
 </script>
 @endsection
