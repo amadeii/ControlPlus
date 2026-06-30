@@ -72,7 +72,7 @@
                             !!}
                         </div>
                         <div class="col-md-2">
-                            {!!Form::select('ordem', 'Ordenar por', ['razao_social' => 'Razão social', 'numero_sequencial' => 'Código', 'created_at' => 'Data de cadastro'])
+                            {!!Form::select('ordem', 'Ordenar por', ['created_at' => 'Data de cadastro', 'razao_social' => 'Razão social', 'numero_sequencial' => 'Código'])
                             ->attrs(['class' => 'form-select'])
                             !!}
                         </div>

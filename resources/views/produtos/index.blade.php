@@ -205,7 +205,7 @@
                         </div>
 
                         <div class="col-md-2">
-                            {!!Form::select('ordem', 'Ordenar por', ['nome' => 'Nome', 'numero_sequencial' => 'Código', 'created_at' => 'Data de cadastro'])
+                            {!!Form::select('ordem', 'Ordenar por', ['created_at' => 'Data de cadastro', 'nome' => 'Nome', 'numero_sequencial' => 'Código'])
                             ->attrs(['class' => 'form-select'])
                             !!}
                         </div>

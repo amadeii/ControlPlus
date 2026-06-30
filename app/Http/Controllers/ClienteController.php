@@ -62,11 +62,17 @@ class ClienteController extends Controller
         $start_date = $request->get('start_date');
         $end_date = $request->get('end_date');
         $ordem = $request->get('ordem');
+        $ordensPermitidas = ['razao_social', 'numero_sequencial', 'created_at'];
+        if (!in_array($ordem, $ordensPermitidas, true)) {
+            $ordem = null;
+        }
 
         $data = Cliente::where('empresa_id', request()->empresa_id)
         ->when(!empty($request->razao_social), function ($q) use ($request) {
-            return  $q->where(function ($quer) use ($request) {
-                return $quer->where('razao_social', 'LIKE', "%$request->razao_social%");
+            $razaoSocial = trim((string)$request->razao_social);
+            return  $q->where(function ($quer) use ($razaoSocial) {
+                return $quer->where('razao_social', 'LIKE', "%{$razaoSocial}%")
+                    ->orWhere('nome_fantasia', 'LIKE', "%{$razaoSocial}%");
             });
         })
         ->when(!empty($request->cpf_cnpj), function ($q) use ($request) {
@@ -81,10 +87,13 @@ class ClienteController extends Controller
             return $query->whereDate('created_at', '<=', $end_date);
         })
         ->when(!$ordem, function ($query) {
-            return $query->orderBy('razao_social');
+            return $query->orderBy('created_at', 'desc')->orderBy('id', 'desc');
         })
         ->when($ordem, function ($query) use ($ordem) {
-            return $query->orderBy($ordem, $ordem == 'created_at' ? 'desc' : 'asc');
+            if ($ordem == 'created_at') {
+                return $query->orderBy('created_at', 'desc')->orderBy('id', 'desc');
+            }
+            return $query->orderBy($ordem);
         })
         ->paginate(__itensPagina());
 

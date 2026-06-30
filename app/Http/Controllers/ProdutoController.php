@@ -161,6 +161,10 @@ class ProdutoController extends Controller
         $end_date = $request->get('end_date');
         $com_variacao = $request->get('com_variacao');
         $ordem = $request->get('ordem');
+        $ordensPermitidas = ['nome', 'numero_sequencial', 'created_at'];
+        if (!in_array($ordem, $ordensPermitidas, true)) {
+            $ordem = null;
+        }
         $com_imagem = $request->get('com_imagem');
         $status = $request->get('status');
         $gerenciar_estoque = $request->get('gerenciar_estoque');
@@ -174,7 +178,12 @@ class ProdutoController extends Controller
             return $query->whereDate('produtos.created_at', '<=', $end_date);
         })
         ->when(!empty($request->nome), function ($q) use ($request) {
-            return $q->where('nome', 'LIKE', "%$request->nome%");
+            $nome = trim((string)$request->nome);
+            return $q->where(function ($query) use ($nome) {
+                $query->where('nome', 'LIKE', "%{$nome}%")
+                    ->orWhere('codigo_barras', 'LIKE', "%{$nome}%")
+                    ->orWhere('referencia', 'LIKE', "%{$nome}%");
+            });
         })
         ->when(!empty($request->codigo_barras), function ($q) use ($request) {
             return $q->where('codigo_barras', 'LIKE', "%$request->codigo_barras%");
@@ -191,7 +200,7 @@ class ProdutoController extends Controller
         ->when(!empty($com_variacao), function ($q) use ($com_variacao) {
             return $q->where('variacao_modelo_id', $com_variacao);
         })
-        ->when(!empty($status), function ($q) use ($status) {
+        ->when($status !== null && $status !== '', function ($q) use ($status) {
             return $q->where('status', $status);
         })
         ->when(!empty($gerenciar_estoque), function ($q) use ($gerenciar_estoque) {
@@ -220,18 +229,29 @@ class ProdutoController extends Controller
             }
         })
         ->when($local_id, function ($query) use ($local_id) {
-            return $query->whereExists(function ($sub) use ($local_id) {
-                $sub->selectRaw('1')
-                ->from('estoques')
-                ->whereColumn('estoques.produto_id', 'produtos.id')
-                ->where('estoques.local_id', $local_id);
+            return $query->where(function ($q) use ($local_id) {
+                $q->whereExists(function ($sub) use ($local_id) {
+                    $sub->selectRaw('1')
+                    ->from('estoques')
+                    ->whereColumn('estoques.produto_id', 'produtos.id')
+                    ->where('estoques.local_id', $local_id);
+                })
+                ->orWhereExists(function ($sub) use ($local_id) {
+                    $sub->selectRaw('1')
+                    ->from('produto_localizacaos')
+                    ->whereColumn('produto_localizacaos.produto_id', 'produtos.id')
+                    ->where('produto_localizacaos.localizacao_id', $local_id);
+                });
             });
         })
         ->when(!$ordem, function ($query) {
-            return $query->orderBy('nome');
+            return $query->orderBy('created_at', 'desc')->orderBy('id', 'desc');
         })
         ->when($ordem, function ($query) use ($ordem) {
-            return $query->orderBy($ordem, $ordem == 'created_at' ? 'desc' : 'asc');
+            if ($ordem == 'created_at') {
+                return $query->orderBy('created_at', 'desc')->orderBy('id', 'desc');
+            }
+            return $query->orderBy($ordem);
         })
         ->distinct('produtos.id')
         ->paginate(__itensPagina());
