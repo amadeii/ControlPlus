@@ -14,6 +14,7 @@
         {!!Form::open()
         ->post()
         ->id('form-produto')
+        ->attrs(['novalidate' => 'novalidate'])
         ->route('produtos.store')
         ->multipart()
         !!}

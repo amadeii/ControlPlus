@@ -3,6 +3,36 @@ var EDIT = 0
 function clearProdutoLoading() {
     $("body").removeClass("loading");
 }
+
+function keepProdutoLoadingOff() {
+    const form = document.getElementById('form-produto');
+    const body = document.body;
+
+    if (!form || !body) {
+        return;
+    }
+
+    clearProdutoLoading();
+
+    if (window.MutationObserver) {
+        const observer = new MutationObserver(() => {
+            if (body.classList.contains('loading')) {
+                body.classList.remove('loading');
+            }
+        });
+        observer.observe(body, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    document.addEventListener('invalid', clearProdutoLoading, true);
+    window.addEventListener('pageshow', clearProdutoLoading);
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', keepProdutoLoadingOff);
+} else {
+    keepProdutoLoadingOff();
+}
+
 $(function() {
     changeDericadoPetroleo()
     changeCardapio()
@@ -34,6 +64,8 @@ $(function() {
 
 // Validação de SKU no submit — obrigatório apenas em novos cadastros (data-sku-required="1")
 $(document).on('submit', '#form-produto', function (e) {
+    clearProdutoLoading();
+
     var $skuInput = $('#inp-sku');
     if ($skuInput.length === 0) return true;
 

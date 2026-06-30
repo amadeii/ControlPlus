@@ -14,6 +14,7 @@
         {!!Form::open()->fill($item)
         ->put()
         ->id('form-produto')
+        ->attrs(['novalidate' => 'novalidate'])
         ->route('produtos.update', [$item->id])
         ->multipart()
         !!}

@@ -212,7 +212,7 @@ $(function () {
 
     $(document).on({
         ajaxStart: function () {
-            if (productFormPage) {
+            if (productFormPage || document.getElementById("form-produto")) {
                 hideGlobalLoading();
                 return;
             }

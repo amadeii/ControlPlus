@@ -1498,7 +1498,7 @@
 @if(!isset($not_submit))
 @section('js')
 
-<script type="text/javascript" src="/js/produto.js"></script>
+<script type="text/javascript" src="/js/produto.js?v={{ filemtime(public_path('js/produto.js')) }}"></script>
 
 <script src="/tinymce/tinymce.min.js"></script>
 <script type="text/javascript">
