@@ -184,6 +184,8 @@ $(function () {
     $body = window.$body;
     let loadingFallbackTimer = null;
     const productLoadingPage = /^\/produtos(\/|$)/.test(window.location.pathname);
+    const productFormPage = /^\/produtos\/create\/?$/.test(window.location.pathname) ||
+        /^\/produtos\/[^\/]+\/edit\/?$/.test(window.location.pathname);
     const loadingFallbackTimeout = productLoadingPage ? 10000 : 30000;
 
     function clearLoadingFallbackTimer() {
@@ -210,6 +212,11 @@ $(function () {
 
     $(document).on({
         ajaxStart: function () {
+            if (productFormPage) {
+                hideGlobalLoading();
+                return;
+            }
+
             $body.addClass("loading");
             startGlobalLoadingFallback();
         },

@@ -1,12 +1,7 @@
 var EDIT = 0
 
-function produtoBody() {
-    window.$body = window.$body || $("body");
-    return window.$body;
-}
-
-function hideProdutoLoading() {
-    produtoBody().removeClass("loading");
+function clearProdutoLoading() {
+    $("body").removeClass("loading");
 }
 $(function() {
     changeDericadoPetroleo()
@@ -38,7 +33,7 @@ $(function() {
 })
 
 // Validação de SKU no submit — obrigatório apenas em novos cadastros (data-sku-required="1")
-$(document).on('submit', 'form', function (e) {
+$(document).on('submit', '#form-produto', function (e) {
     var $skuInput = $('#inp-sku');
     if ($skuInput.length === 0) return true;
 
@@ -47,6 +42,7 @@ $(document).on('submit', 'form', function (e) {
 
     if (isRequired && valor === '') {
         e.preventDefault();
+        clearProdutoLoading();
         $skuInput.addClass('is-invalid');
         if ($skuInput.next('.invalid-feedback').length === 0) {
             $skuInput.after('<div class="invalid-feedback">SKU é obrigatório para novos produtos.</div>');
@@ -57,6 +53,7 @@ $(document).on('submit', 'form', function (e) {
 
     if (valor !== '' && !/^[A-Za-z0-9\-_]+$/.test(valor)) {
         e.preventDefault();
+        clearProdutoLoading();
         $skuInput.addClass('is-invalid');
         if ($skuInput.next('.invalid-feedback').length === 0) {
             $skuInput.after('<div class="invalid-feedback">SKU deve conter apenas letras, números, hífen ou sublinhado.</div>');
@@ -146,14 +143,9 @@ function gerarCode(inp) {
 }
 
 $('.btn-action').click(() => {
+    clearProdutoLoading()
     addClassRequired()
 })
-
-$(document).on('submit', '#form-produto', function () {
-    produtoBody().addClass("loading");
-});
-
-window.addEventListener("pageshow", hideProdutoLoading);
 
 function addClassRequired() {
     let isInalid = false
@@ -178,18 +170,10 @@ function addClassRequired() {
 
     setTimeout(() => {
         if(isInalid){
+            clearProdutoLoading()
             audioError()
             campos = campos.substring(0, campos.length-2)
             toastr.error('Campos obrigatórios não preenchidos: ' + campos);
-            hideProdutoLoading()
-        }else{
-            const form = document.getElementById('form-produto');
-            if (form && !form.checkValidity()) {
-                hideProdutoLoading()
-                return;
-            }
-            produtoBody().addClass("loading");
-            setTimeout(hideProdutoLoading, 12000);
         }
     }, 50)
 }
