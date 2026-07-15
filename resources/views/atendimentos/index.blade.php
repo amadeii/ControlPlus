@@ -46,7 +46,7 @@
                         <tbody>
                             @forelse ($data as $item)
                             <tr>
-                                <td data-label="Funcionário">{{ $item->funcionario->nome }}</td>
+                                <td data-label="Funcionário">{{ $item->funcionario ? $item->funcionario->nome : 'Não informado' }}</td>
                                 <td data-label="Dias">{{ $item->diaStr() }}</td>
                                 <td>
                                     <form style="width: 100px;" action="{{ route('atendimentos.destroy', $item->id) }}" method="post" id="form-{{$item->id}}">

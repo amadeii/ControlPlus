@@ -186,7 +186,7 @@
                                 <div class="col-md-4 mt-3 cidade">
                                     @isset($item)
                                     {!!Form::select('cidade_id', 'Cidade')
-                                    ->options($item != null ? [$item->cidade_id => $item->cidade->info] : [])
+                                    ->options($item?->cidade ? [$item->cidade_id => $item->cidade->info] : [])
                                     ->required()
                                     !!}
                                     @else

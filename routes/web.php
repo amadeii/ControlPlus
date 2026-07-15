@@ -650,7 +650,7 @@ Route::middleware(['verificaEmpresa', 'validaPlano', 'validaContrato'])->group(f
     Route::get('mdfe/alterar-estado/{id}', 'MdfeController@alterarEstado')->name('mdfe.alterar-estado');
     Route::put('mdfe/storeEstado/{id}', 'MdfeController@storeEstado')->name('mdfe.storeEstado');
 
-    Route::resource('clientes', 'ClienteController');
+    Route::resource('clientes', 'ClienteController')->except(['show']);
     Route::delete('clientes-destroy-select', 'ClienteController@destroySelecet')->name('clientes.destroy-select');
     Route::get('clientes-cash-back/{id}', 'ClienteController@cashBack')->name('clientes.cash-back');
     Route::get('clientes-import', 'ClienteController@import')->name('clientes.import');
@@ -663,7 +663,7 @@ Route::middleware(['verificaEmpresa', 'validaPlano', 'validaContrato'])->group(f
 
     Route::post('clientes-creditos/alterar-status', 'ClienteController@alterarStatusCredito')->name('clientes.alterar-status-credito');
 
-    Route::resource('fornecedores', 'FornecedorController');
+    Route::resource('fornecedores', 'FornecedorController')->except(['show']);
     Route::delete('fornecedores-destroy-select', 'FornecedorController@destroySelecet')->name('fornecedores.destroy-select');
 
     Route::get('fornecedores-import', 'FornecedorController@import')->name('fornecedores.import');
@@ -684,7 +684,7 @@ Route::middleware(['verificaEmpresa', 'validaPlano', 'validaContrato'])->group(f
     Route::get('produtos-buscar-ajuste', 'ProdutoController@buscarAjuste')->name('produtos.buscar-ajuste');
     Route::post('/produtos/alterar-campo', 'ProdutoController@alterarCampo')->name('produtos.alterar-campo');
 
-    Route::resource('transportadoras', 'TransportadoraController');
+    Route::resource('transportadoras', 'TransportadoraController')->except(['show']);
     Route::delete('transportadoras-destroy-select', 'TransportadoraController@destroySelecet')->name('transportadoras.destroy-select');
 
     Route::resource('transferencia-estoque', 'TransferenciaEstoqueController');
@@ -720,7 +720,7 @@ Route::middleware(['verificaEmpresa', 'validaPlano', 'validaContrato'])->group(f
     Route::delete('estoque-retirada-destroy/{id}', 'EstoqueController@retiradaDestroy')->name('estoque-retirada.destroy');
     Route::get('estoque-localizacao-define/{id}', 'EstoqueLocalizacaoController@define')->name('estoque-localizacao.define');
     Route::put('estoque-localizacao-store/{id}', 'EstoqueLocalizacaoController@store')->name('estoque-localizacao.store');
-    Route::resource('categoria-produtos', 'CategoriaProdutoController');
+    Route::resource('categoria-produtos', 'CategoriaProdutoController')->except(['show']);
     Route::resource('unidades-medida', 'UnidadeMedidaController');
     Route::delete('categoria-produtos-destroy-select', 'CategoriaProdutoController@destroySelecet')->name('categoria-produtos.destroy-select');
 
@@ -766,7 +766,7 @@ Route::middleware(['verificaEmpresa', 'validaPlano', 'validaContrato'])->group(f
     Route::get('/produto-etiqueta/{id}', 'ProdutoController@etiqueta')->name('produtos.etiqueta');
     Route::post('/produto-etiqueta-store/{id}', 'ProdutoController@etiquetaStore')->name('produtos.etiqueta-store');
 
-    Route::resource('marcas', 'MarcaController');
+    Route::resource('marcas', 'MarcaController')->except(['show']);
     Route::resource('modelo-etiquetas', 'ModeloEtiquetaController');
     Route::get('/modelo-etiquetas-importar', 'ModeloEtiquetaController@importar')->name('modelo-etiquetas.import');
 

@@ -35,7 +35,7 @@ class TaxaPagamento extends Model
 
     public function getTipo(){
         $tipos = TaxaPagamento::tiposPagamento();
-        return $tipos[$this->tipo_pagamento];
+        return $tipos[$this->tipo_pagamento] ?? 'Não informado';
     }
 
     public static function bandeiras(){
@@ -55,6 +55,6 @@ class TaxaPagamento extends Model
 
     public function getBandeira(){
         $bandeiras = TaxaPagamento::bandeiras();
-        return $bandeiras[$this->bandeira_cartao];
+        return $bandeiras[$this->bandeira_cartao] ?? 'Não informado';
     }
 }

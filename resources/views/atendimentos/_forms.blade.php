@@ -10,8 +10,8 @@
                     !!}
                 </div>
                 @else
-                <input type="hidden" value="{{ $item->funcionario->id }}" name="funcionario_id">
-                <h4>Funconário <strong class="text-success">{{ $item->funcionario->nome }}</strong></h4>
+                <input type="hidden" value="{{ $item->funcionario_id }}" name="funcionario_id">
+                <h4>Funcionário <strong class="text-success">{{ $item->funcionario ? $item->funcionario->nome : 'Não informado' }}</strong></h4>
                 @endif
                 <div class="col-md-12 mt-3">
                     @foreach($dias as $key => $d)
