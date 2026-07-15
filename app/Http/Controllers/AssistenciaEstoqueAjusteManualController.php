@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\AssistenciaEstoqueAjusteManual;
 use App\Models\Deposito;
 use App\Services\AssistenciaEstoqueAjusteManualService;
-use App\Services\AssistenciaOsEstoqueService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -32,10 +31,6 @@ class AssistenciaEstoqueAjusteManualController extends Controller
 
     public function create()
     {
-        if (!AssistenciaOsEstoqueService::integraEstoqueParaEmpresa((int) request()->empresa_id)) {
-            abort(403, 'Fluxo disponível apenas com tipo de OS em Assistência técnica.');
-        }
-
         $motivosOpcoes = AssistenciaEstoqueAjusteManual::motivosLabels();
         $depositosPecaOpcoes = $this->buildDepositosOpcoes();
         $idempotencyKey = (string) Str::uuid();
@@ -51,10 +46,6 @@ class AssistenciaEstoqueAjusteManualController extends Controller
 
     public function store(Request $request)
     {
-        if (!AssistenciaOsEstoqueService::integraEstoqueParaEmpresa((int) request()->empresa_id)) {
-            abort(403, 'Fluxo disponível apenas com tipo de OS em Assistência técnica.');
-        }
-
         $empresaId = (int) request()->empresa_id;
         $motivos = array_keys(AssistenciaEstoqueAjusteManual::motivosLabels());
         $locaisAtivosIds = collect();

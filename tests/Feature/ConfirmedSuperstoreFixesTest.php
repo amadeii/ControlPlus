@@ -148,6 +148,45 @@ class ConfirmedSuperstoreFixesTest extends TestCase
         $this->assertNull(MarketPlaceConfig::validaCartaoEntrega(null));
     }
 
+    public function test_assistance_stock_adjustment_no_longer_requires_assistance_os_type(): void
+    {
+        $controller = file_get_contents(app_path('Http/Controllers/AssistenciaEstoqueAjusteManualController.php'));
+        $service = file_get_contents(app_path('Services/AssistenciaEstoqueAjusteManualService.php'));
+
+        $this->assertStringNotContainsString('integraEstoqueParaEmpresa', $controller);
+        $this->assertStringNotContainsString('Fluxo dispon', $controller);
+        $this->assertStringNotContainsString('integraEstoqueParaEmpresa', $service);
+        $this->assertStringNotContainsString('tipo de OS', $service);
+    }
+
+    public function test_assistance_stock_adjustment_routes_keep_permission_middleware(): void
+    {
+        $create = Route::getRoutes()->getByName('assistencia-estoque-ajuste.create');
+        $store = Route::getRoutes()->getByName('assistencia-estoque-ajuste.store');
+        $index = Route::getRoutes()->getByName('assistencia-estoque-ajuste.index');
+        $show = Route::getRoutes()->getByName('assistencia-estoque-ajuste.show');
+
+        $this->assertNotNull($create);
+        $this->assertNotNull($store);
+        $this->assertNotNull($index);
+        $this->assertNotNull($show);
+
+        $this->assertContains('permission:assistencia_estoque_ajuste_create', $create->gatherMiddleware());
+        $this->assertContains('permission:assistencia_estoque_ajuste_create', $store->gatherMiddleware());
+        $this->assertContains('permission:assistencia_estoque_ajuste_view', $index->gatherMiddleware());
+        $this->assertContains('permission:assistencia_estoque_ajuste_view', $show->gatherMiddleware());
+    }
+
+    public function test_assistance_stock_adjustment_still_validates_company_scope(): void
+    {
+        $controller = file_get_contents(app_path('Http/Controllers/AssistenciaEstoqueAjusteManualController.php'));
+
+        $this->assertStringContainsString("Rule::exists('produtos', 'id')->where('empresa_id', \$empresaId)", $controller);
+        $this->assertStringContainsString("Rule::exists('depositos', 'id')->where('empresa_id', \$empresaId)", $controller);
+        $this->assertStringContainsString("Rule::exists('localizacaos', 'id')", $controller);
+        $this->assertStringContainsString('__validaObjetoEmpresa($item)', $controller);
+    }
+
     public function test_product_related_descriptions_handle_missing_relationships(): void
     {
         $estoque = new Estoque(['produto_id' => 999]);

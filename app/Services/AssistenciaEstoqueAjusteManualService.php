@@ -34,10 +34,6 @@ class AssistenciaEstoqueAjusteManualService
         ?int $produtoVariacaoId = null,
         string $idempotencyKey = ''
     ): AssistenciaEstoqueAjusteManual {
-        if (!AssistenciaOsEstoqueService::integraEstoqueParaEmpresa($empresaId)) {
-            throw new \Exception('Ajuste manual de estoque da assistência só está disponível quando o tipo de OS está em Assistência técnica (configuração geral).');
-        }
-
         $motivos = array_keys(AssistenciaEstoqueAjusteManual::motivosLabels());
         if (!in_array($motivo, $motivos, true)) {
             throw new \Exception('Motivo inválido.');
