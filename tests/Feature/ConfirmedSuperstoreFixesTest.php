@@ -9,6 +9,7 @@ use App\Models\Estoque;
 use App\Models\ItemNfce;
 use App\Models\MarketPlaceConfig;
 use App\Models\NaturezaOperacao;
+use App\Models\Permission;
 use App\Models\Produto;
 use App\Models\ReservaConfig;
 use App\Models\TaxaPagamento;
@@ -185,6 +186,46 @@ class ConfirmedSuperstoreFixesTest extends TestCase
         $this->assertStringContainsString("Rule::exists('depositos', 'id')->where('empresa_id', \$empresaId)", $controller);
         $this->assertStringContainsString("Rule::exists('localizacaos', 'id')", $controller);
         $this->assertStringContainsString('__validaObjetoEmpresa($item)', $controller);
+    }
+
+    public function test_goals_resource_uses_expected_permissions(): void
+    {
+        $routes = [
+            'metas.index' => 'permission:metas_view',
+            'metas.create' => 'permission:metas_create',
+            'metas.store' => 'permission:metas_create',
+            'metas.edit' => 'permission:metas_edit',
+            'metas.update' => 'permission:metas_edit',
+            'metas.destroy' => 'permission:metas_delete',
+        ];
+
+        foreach ($routes as $routeName => $middleware) {
+            $route = Route::getRoutes()->getByName($routeName);
+            $this->assertNotNull($route, "Route {$routeName} should exist.");
+            $this->assertContains($middleware, $route->gatherMiddleware(), "Route {$routeName} should require {$middleware}.");
+        }
+    }
+
+    public function test_goals_permissions_are_available_for_master_and_admin_sync(): void
+    {
+        $permissions = collect(Permission::defaultPermissions())->pluck('name')->all();
+
+        $this->assertContains('metas_view', $permissions);
+        $this->assertContains('metas_create', $permissions);
+        $this->assertContains('metas_edit', $permissions);
+        $this->assertContains('metas_delete', $permissions);
+    }
+
+    public function test_goals_controller_keeps_company_scope(): void
+    {
+        $controller = file_get_contents(app_path('Http/Controllers/MetaResultadoController.php'));
+
+        $this->assertStringContainsString("MetaResultado::where('empresa_id', request()->empresa_id)", $controller);
+        $this->assertStringContainsString("Funcionario::where('empresa_id', request()->empresa_id)->find", $controller);
+        $this->assertStringContainsString("Rule::exists('funcionarios', 'id')->where('empresa_id', \$empresaId)", $controller);
+        $this->assertStringContainsString("Rule::exists('localizacaos', 'id')->where('empresa_id', \$empresaId)", $controller);
+        $this->assertStringContainsString('__validaObjetoEmpresa($item)', $controller);
+        $this->assertStringContainsString("\$data['empresa_id'] = \$empresaId;", $controller);
     }
 
     public function test_product_related_descriptions_handle_missing_relationships(): void

@@ -5,14 +5,15 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\MetaResultado;
 use App\Models\Funcionario;
+use Illuminate\Validation\Rule;
 
 class MetaResultadoController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('permission:metas_view', ['only' => ['create', 'store']]);
-        $this->middleware('permission:metas_create', ['only' => ['edit', 'update']]);
-        $this->middleware('permission:metas_edit', ['only' => ['show', 'index']]);
+        $this->middleware('permission:metas_view', ['only' => ['show', 'index']]);
+        $this->middleware('permission:metas_create', ['only' => ['create', 'store']]);
+        $this->middleware('permission:metas_edit', ['only' => ['edit', 'update']]);
         $this->middleware('permission:metas_delete', ['only' => ['destroy']]);
     }
 
@@ -24,7 +25,7 @@ class MetaResultadoController extends Controller
         })
         ->paginate(__itensPagina());
 
-        $funcionario = Funcionario::find($request->funcionario_id);
+        $funcionario = Funcionario::where('empresa_id', request()->empresa_id)->find($request->funcionario_id);
         return view('metas_resultado.index', compact('data', 'funcionario'));
     }
 
@@ -42,13 +43,15 @@ class MetaResultadoController extends Controller
 
     public function store(Request $request)
     {
+        $data = $this->validateData($request);
+
         try {
             
-            MetaResultado::create($request->all());
-            __createLog($request->empresa_id, 'Meta', 'cadastrar', $request->nome);
+            MetaResultado::create($data);
+            __createLog($data['empresa_id'], 'Meta', 'cadastrar', $data['tabela']);
             session()->flash('flash_success', 'Cadastrado com sucesso');
         } catch (\Exception $e) {
-            __createLog($request->empresa_id, 'Meta', 'erro', $e->getMessage());
+            __createLog(request()->empresa_id, 'Meta', 'erro', $e->getMessage());
             session()->flash('flash_error', 'Não foi possível concluir o cadastro' . $e->getMessage());
         }
         return redirect()->route('metas.index');
@@ -58,13 +61,15 @@ class MetaResultadoController extends Controller
     {
         $item = MetaResultado::findOrFail($id);
         __validaObjetoEmpresa($item);
+        $data = $this->validateData($request);
+
         try {
             
-            $item->fill($request->all())->save();
-            __createLog($request->empresa_id, 'Meta', 'editar', $item->funcionario->nome);
+            $item->fill($data)->save();
+            __createLog($data['empresa_id'], 'Meta', 'editar', $item->funcionario ? $item->funcionario->nome : 'Meta #' . $item->id);
             session()->flash('flash_success', 'Alterado com sucesso');
         } catch (\Exception $e) {
-            __createLog($request->empresa_id, 'Meta', 'erro', $e->getMessage());
+            __createLog(request()->empresa_id, 'Meta', 'erro', $e->getMessage());
             session()->flash('flash_error', 'Não foi possível alterar o cadastro' . $e->getMessage());
         }
         return redirect()->route('metas.index');
@@ -84,5 +89,31 @@ class MetaResultadoController extends Controller
             session()->flash('flash_error', 'Não foi possível deletar' . $e->getMessage());
         }
         return redirect()->back();
+    }
+
+    private function validateData(Request $request): array
+    {
+        $empresaId = (int) request()->empresa_id;
+
+        $data = $request->validate([
+            'funcionario_id' => [
+                'required',
+                'integer',
+                Rule::exists('funcionarios', 'id')->where('empresa_id', $empresaId),
+            ],
+            'valor' => ['required'],
+            'tabela' => ['required', Rule::in(array_keys(MetaResultado::tabelas()))],
+            'local_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('localizacaos', 'id')->where('empresa_id', $empresaId),
+            ],
+        ]);
+
+        $data['empresa_id'] = $empresaId;
+        $data['valor'] = __convert_value_bd($data['valor']);
+        $data['local_id'] = $data['local_id'] ?? null;
+
+        return $data;
     }
 }

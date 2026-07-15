@@ -148,6 +148,10 @@ class Permission extends \Spatie\Permission\Models\Permission
             array('name' => 'natureza_operacao_view', 'description' => 'Visualiza natureza de operação'),
             array('name' => 'logs_view', 'description' => 'Visualiza logs de atividade'),
             array('name' => 'dashboard_view', 'description' => 'Visualiza painel de indicadores'),
+            array('name' => 'metas_view', 'description' => 'Visualiza metas'),
+            array('name' => 'metas_create', 'description' => 'Cria metas'),
+            array('name' => 'metas_edit', 'description' => 'Edita metas'),
+            array('name' => 'metas_delete', 'description' => 'Deleta metas'),
 
             // INTEGRAÇÕES
             array('name' => 'ecommerce_view', 'description' => 'Visualiza ecommerce'),

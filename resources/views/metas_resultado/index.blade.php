@@ -51,13 +51,13 @@
                                     <td>
                                         <form style="width: 100px;" action="{{ route('metas.destroy', $item->id) }}" method="post" id="form-{{$item->id}}">
                                             @method('delete')
-                                            @can('medico_edit')
+                                            @can('metas_edit')
                                             <a class="btn btn-warning btn-sm text-white" href="{{ route('metas.edit', [$item->id]) }}">
                                                 <i class="ri-pencil-fill"></i>
                                             </a>
                                             @endcan
                                             @csrf
-                                            @can('medico_delete')
+                                            @can('metas_delete')
                                             <button type="button" class="btn btn-delete btn-sm btn-danger">
                                                 <i class="ri-delete-bin-line"></i>
                                             </button>
