@@ -103,7 +103,6 @@ docker-compose.override.yaml
 docker/*.env
 docker/.env
 .docker/
-.dockerignore
 docker-data/
 *.pid
 
