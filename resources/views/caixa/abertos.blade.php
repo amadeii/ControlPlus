@@ -19,7 +19,7 @@
                 <tbody>
                     @forelse ($data as $item)
                     <tr>
-                        <td>{{ $item->usuario->name }}</td>
+                        <td>{{ $item->usuario ? $item->usuario->name : 'Não informado' }}</td>
                         <td>{{ __data_pt($item->created_at) }}</td>
                         <td>{{ $item->data_fechamento ? __data_pt($item->data_fechamento) : '--' }}</td>
                         <td>{{ __moeda($item->valor_abertura) }}</td>

@@ -50,7 +50,7 @@
                     <tbody>
                         @forelse($data as $item)
                         <tr>
-                            <td>{{ $item->produto->nome }}</td>
+                            <td>{{ $item->produto ? $item->produto->nome : 'Produto não informado' }}</td>
 
                             <td>
                                 @if(!$item->produto->unidadeDecimal())

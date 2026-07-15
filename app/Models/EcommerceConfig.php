@@ -28,7 +28,8 @@ class EcommerceConfig extends Model
     }
 
     public function sizeColumn(){
-        $tiposPagamento = json_decode($this->tipos_pagamento);
+        $tiposPagamento = json_decode($this->tipos_pagamento, true);
+        $tiposPagamento = is_array($tiposPagamento) ? $tiposPagamento : [];
         if(sizeof($tiposPagamento) == 1){
             return "col-md-12";
         }else if(sizeof($tiposPagamento) == 2){
@@ -44,8 +45,8 @@ class EcommerceConfig extends Model
 
     public function getEnderecoAttribute()
     {
-       
-        return "$this->rua, $this->numero - " . $this->cidade->info;
+        $cidade = $this->cidade ? $this->cidade->info : 'Cidade não informada';
+        return "$this->rua, $this->numero - " . $cidade;
     }
 
     public function getLogoImgAttribute()

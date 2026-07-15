@@ -38,7 +38,7 @@ class ItemNfce extends Model
 
     public function descricao(){
 
-        $descricao = $this->produto->nome;
+        $descricao = $this->produto ? $this->produto->nome : 'Produto não informado';
         
         if($this->produtoVariacao){
             $descricao .= " - " . $this->produtoVariacao->descricao;
@@ -47,7 +47,7 @@ class ItemNfce extends Model
         if(sizeof($this->adicionais) > 0){
             $adicionalStr = " - adicionais: ";
             foreach($this->adicionais as $a){
-                $adicionalStr .= $a->adicional->nome . ", ";
+                $adicionalStr .= ($a->adicional ? $a->adicional->nome : 'Não informado') . ", ";
             }
             $adicionalStr = substr($adicionalStr, 0, strlen($adicionalStr)-2);
             $descricao .= $adicionalStr;

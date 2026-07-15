@@ -293,7 +293,7 @@ class Produto extends Model
 	public function valoresPizza(){
 		$str = '';
 		foreach($this->pizzaValores as $pizza){
-			$str .= $pizza->tamanho->nome . " R$ " . __moeda($pizza->valor) . "<br>"; 
+			$str .= ($pizza->tamanho ? $pizza->tamanho->nome : 'Não informado') . " R$ " . __moeda($pizza->valor) . "<br>";
 		}
 		return $str;
 	}
@@ -823,7 +823,7 @@ class Produto extends Model
 	public function getDescricaoAnp()
 	{
 		$lista = $this->listaAnp();
-		return $lista[$this->codigo_anp];
+		return $lista[$this->codigo_anp] ?? 'Não informado';
 	}
 
 

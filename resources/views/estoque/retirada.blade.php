@@ -118,7 +118,7 @@
                     <tbody>
                         @forelse($data as $item)
                         <tr>
-                            <td>{{ $item->produto->nome }}</td>
+                            <td>{{ $item->produto ? $item->produto->nome : 'Produto não informado' }}</td>
                             <td>{{ number_format($item->quantidade, 3, '.', '') }}</td>
                             <td>{{ $item->motivo }}</td>
                             <td>{{ $item->observacao }}</td>

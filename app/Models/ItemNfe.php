@@ -45,6 +45,9 @@ class ItemNfe extends Model
         if(strlen($this->descricao) > 1){
             return $this->descricao;
         }
+        if(!$this->produto){
+            return 'Produto não informado';
+        }
         if($this->variacao_id == null){
             return $this->produto->nome;
         }
@@ -56,6 +59,9 @@ class ItemNfe extends Model
     }
 
     public function __statusVencimento(){
+        if(!$this->data_vencimento){
+            return '<span class="badge bg-secondary">Não informado</span>';
+        }
         if(\Carbon\Carbon::parse($this->data_vencimento)->isPast()){
             return '<span class="badge bg-danger">VENCIDO</span>'; 
         }

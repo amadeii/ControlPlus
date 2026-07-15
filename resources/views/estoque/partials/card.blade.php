@@ -12,7 +12,7 @@
       <div class="card-body text-center">
         <h6 class="card-title fw-bold text-dark mb-1">
           <div class="form-check form-checkbox-danger mb-2">
-            {{ $item->produto->nome }}
+            {{ $item->produto ? $item->produto->nome : 'Produto não informado' }}
           </div>
         </h6>
         

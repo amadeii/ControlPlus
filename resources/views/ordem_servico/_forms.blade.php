@@ -1,5 +1,5 @@
 <div class="row g-2">
-    @if($configGeral->tipo_ordem_servico == 'assistencia técinica')
+    @if(optional($configGeral)->tipo_ordem_servico == 'assistencia técinica')
     <input type="hidden" name="escopo_ordem_servico"
         value="{{ old('escopo_ordem_servico', isset($item) ? ($item->escopo_ordem_servico ?? \App\Models\OrdemServico::ESCOPO_CLIENTE) : request('escopo_ordem_servico', \App\Models\OrdemServico::ESCOPO_CLIENTE)) }}">
     @endif
@@ -19,7 +19,7 @@
     @endif
     
     <div class="col-md-4">
-        {!!Form::select('cliente_id', 'Cliente')->attrs(['class' => 'select2'])->options(isset($item) ? [$item->cliente_id => $item->cliente->razao_social] : [])
+        {!!Form::select('cliente_id', 'Cliente')->attrs(['class' => 'select2'])->options((isset($item) && $item->cliente) ? [$item->cliente_id => $item->cliente->razao_social] : [])
         ->required()
         !!}
     </div>
@@ -34,12 +34,12 @@
     <div class="col-md-3">
         {!!Form::select(
             'funcionario_id',
-            $configGeral->tipo_ordem_servico == 'assistencia técinica' ? 'Atendente (recepção)' : 'Funcionário',
+            optional($configGeral)->tipo_ordem_servico == 'assistencia técinica' ? 'Atendente (recepção)' : 'Funcionário',
             ['' => 'Selecione'] + $funcionario->pluck('nome', 'id')->all())->attrs(['class' => 'form-select'])->required(__isSegmentoPlanoOtica())
         !!}
     </div>
 
-    @if(!__isSegmentoPlanoOtica() && $configGeral->tipo_ordem_servico == 'oficina')
+    @if(!__isSegmentoPlanoOtica() && optional($configGeral)->tipo_ordem_servico == 'oficina')
     <div class="col-md-3">
         <label>Veículo</label>
         <div class="input-group flex-nowrap">
@@ -58,7 +58,7 @@
     </div>
     @endif
 
-    @if($configGeral->tipo_ordem_servico == 'assistencia técinica')
+    @if(optional($configGeral)->tipo_ordem_servico == 'assistencia técinica')
     <div class="col-md-3">
         {!!Form::select('tecnico_responsavel_id', 'Técnico responsável', ['' => 'Selecione'] + $funcionario->pluck('nome', 'id')->all())
         ->attrs(['class' => 'form-select']) !!}

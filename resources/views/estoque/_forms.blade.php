@@ -46,7 +46,7 @@
     <div class="col-md-4">
         {!!Form::select('produto_id', 'Produto')
         ->attrs(['class' => 'form-select'])->required()
-        ->options(isset($item) ? [$item->produto->id => $item->produto->nome] : [])
+        ->options((isset($item) && $item->produto) ? [$item->produto->id => $item->produto->nome] : [])
         ->disabled(isset($item) ? true : false)
         !!}
     </div>

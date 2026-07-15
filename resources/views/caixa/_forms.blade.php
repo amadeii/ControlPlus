@@ -2,7 +2,7 @@
 <div class="row">
     <h4 class="text-success">Caixa Aberto!</h4>
     @if($item->contaEmpresa)
-    <h5 class="text-primary">Conta: <strong>{{ $item->contaEmpresa->nome }}</strong></h5>
+    <h5 class="text-primary">Conta: <strong>{{ $item->contaEmpresa ? $item->contaEmpresa->nome : 'Não informado' }}</strong></h5>
     @endif
 </div>
 @else

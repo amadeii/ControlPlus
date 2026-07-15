@@ -27,13 +27,17 @@ class DiaSemana extends Model
 	}
 
 	public function diaStr(){
-		$dias = json_decode($this->dia);
-		$html = '';
-		foreach($dias as $d){
-			$html .= \App\Models\DiaSemana::getDiaStr($d) . ", ";
+		$dias = json_decode($this->dia, true);
+		if (!is_array($dias) || empty($dias)) {
+			return 'Não informado';
 		}
-		$html = substr($html, 0, strlen($html)-2);
-		return $html;	
+
+		$labels = [];
+		foreach($dias as $d){
+			$labels[] = \App\Models\DiaSemana::getDiaStr($d);
+		}
+
+		return implode(', ', $labels);
 	}
 
 	public static function getDias(){
@@ -50,7 +54,7 @@ class DiaSemana extends Model
 
 	public static function getDiaStr($dia){
 		$dias = DiaSemana::getDias();
-		return $dias[$dia];
+		return $dias[$dia] ?? 'Não informado';
 	}
 
 	public static function getDia($n){
@@ -63,7 +67,7 @@ class DiaSemana extends Model
 			'sexta',
 			'sabado',
 		];
-		return $dias[$n];
+		return $dias[$n] ?? null;
 	}
 
 }

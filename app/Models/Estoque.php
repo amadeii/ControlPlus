@@ -40,6 +40,10 @@ class Estoque extends Model
     }
 
     public function descricao(){
+        if(!$this->produto){
+            return 'Produto não informado';
+        }
+
         if($this->produto_variacao_id == null){
             return $this->produto->nome;
         }

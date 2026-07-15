@@ -151,7 +151,7 @@
                                     @endcan
 
                                     <td data-label="Código">{{ $item->codigo_sequencial }}</td>
-                                    <td data-label="Nome">{{ $item->cliente->razao_social }}</td>
+                                    <td data-label="Nome">{{ $item->cliente ? $item->cliente->razao_social : 'Não informado' }}</td>
                                     @if($mostrarListaAssistencia)
                                     <td data-label="Equipamento">{{ $item->equipamento ?: '—' }}</td>
                                     <td data-label="Nº série">{{ $item->numero_serie ?: '—' }}</td>

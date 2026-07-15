@@ -27,7 +27,7 @@
                                     <i class="ri-user-line"></i>
                                 </div>
                                 <div class="info-title">Usuário</div>
-                                <div class="info-value">{{ $item->usuario->name }}</div>
+                                <div class="info-value">{{ $item->usuario ? $item->usuario->name : 'Não informado' }}</div>
                             </div>
                         </div>
 
@@ -360,7 +360,7 @@
                                 <tr>
                                     <td>{{ $t->numero_sequencial }}</td>
                                     <td>{{ $t->nfe ? ($t->nfe ? $t->nfe->numero_sequencial : '--') : ($t->nfce ? $t->nfce->numero_sequencial : '--') }}</td>
-                                    <td>{{ $t->nfce ? ($t->nfce->cliente ? $t->nfce->cliente->razao_social : '--') : ($t->nfe ? $t->nfe->cliente->razao_social : '--') }}</td>
+                                    <td>{{ $t->nfce ? ($t->nfce->cliente ? $t->nfce->cliente->razao_social : '--') : ($t->nfe ? ($t->nfe->cliente ? $t->nfe->cliente->razao_social : '--') : '--') }}</td>
                                     <td>{{ __data_pt($t->created_at) }}</td>
                                     <td>
                                         {{ App\Models\Nfce::getTipoPagamento($t->tipo_pagamento) }}
@@ -542,7 +542,7 @@
                                 </td>
                                 @if($s->contaEmpresa)
                                 <td>
-                                    {{ $s->contaEmpresa->nome }}
+                                    {{ $s->contaEmpresa ? $s->contaEmpresa->nome : 'Não informado' }}
                                 </td>
                                 @endif
 
@@ -599,7 +599,7 @@
                                 </td>
                                 @if($s->contaEmpresa)
                                 <td>
-                                    {{ $s->contaEmpresa->nome }}
+                                    {{ $s->contaEmpresa ? $s->contaEmpresa->nome : 'Não informado' }}
                                 </td>
                                 @endif
 

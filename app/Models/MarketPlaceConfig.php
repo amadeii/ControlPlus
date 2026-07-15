@@ -26,7 +26,8 @@ class MarketPlaceConfig extends Model
     ];
 
     public static function getSegmentoServico($config){
-        $segmentos = json_decode($config->segmento);
+        $segmentos = json_decode($config->segmento, true);
+        $segmentos = is_array($segmentos) ? $segmentos : [];
         if(in_array('servicos', $segmentos)){
             return 1;
         }
@@ -35,8 +36,8 @@ class MarketPlaceConfig extends Model
 
     public function getEnderecoAttribute()
     {
-
-        return "$this->rua, $this->numero - " . $this->cidade->info;
+        $cidade = $this->cidade ? $this->cidade->info : 'Cidade não informada';
+        return "$this->rua, $this->numero - " . $cidade;
     }
     
     public function getLogoAppAttribute()
@@ -87,7 +88,8 @@ class MarketPlaceConfig extends Model
             'Hipercard débito',
             'Elo débito'
         ];
-        $tipos_pagamento = json_decode($this->tipos_pagamento);
+        $tipos_pagamento = json_decode($this->tipos_pagamento, true);
+        $tipos_pagamento = is_array($tipos_pagamento) ? $tipos_pagamento : [];
         foreach($cartoes as $c){
             if(in_array($c, $tipos_pagamento)){
                 return 1;
@@ -98,12 +100,17 @@ class MarketPlaceConfig extends Model
 
     public function tiposEntrega(){
         
-        $tipo_entrega = json_decode($this->tipo_entrega);
+        $tipo_entrega = json_decode($this->tipo_entrega, true);
+        $tipo_entrega = is_array($tipo_entrega) ? $tipo_entrega : [];
+        if (empty($tipo_entrega)) {
+            return 'Não informado';
+        }
         if(sizeof($tipo_entrega) == 2) return 'delivery-retirada';
         return $tipo_entrega[0];
     }
 
     public static function validaCartaoEntrega($tipos_pagamento){
+        $tipos_pagamento = is_array($tipos_pagamento) ? $tipos_pagamento : [];
         $cartoes = [
             'Visa crédito',
             'Mastercard crédito',

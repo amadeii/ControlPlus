@@ -47,7 +47,8 @@ class AtendimentoController extends Controller
     public function edit($id)
     {
         $item = DiaSemana::findOrfail($id);
-        $diasEdit = json_decode($item->dia);
+        $diasEdit = json_decode($item->dia, true);
+        $diasEdit = is_array($diasEdit) ? $diasEdit : [];
         $dias = DiaSemana::getDias();
 
         return view('atendimentos.edit', compact('dias', 'item', 'diasEdit'));

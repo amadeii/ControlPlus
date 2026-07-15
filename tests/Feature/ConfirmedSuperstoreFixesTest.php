@@ -3,8 +3,14 @@
 namespace Tests\Feature;
 
 use App\Models\DiaSemana;
+use App\Models\EcommerceConfig;
 use App\Models\Empresa;
+use App\Models\Estoque;
+use App\Models\ItemNfce;
+use App\Models\MarketPlaceConfig;
 use App\Models\NaturezaOperacao;
+use App\Models\Produto;
+use App\Models\ReservaConfig;
 use App\Models\TaxaPagamento;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Route;
@@ -83,5 +89,78 @@ class ConfirmedSuperstoreFixesTest extends TestCase
         $this->assertSame(TaxaPagamento::bandeiras()['01'], $valid->getBandeira());
         $this->assertSame('Não informado', $unknown->getTipo());
         $this->assertSame('Não informado', $unknown->getBandeira());
+    }
+
+    /**
+     * @dataProvider invalidDiaPayloadProvider
+     */
+    public function test_dia_semana_handles_empty_or_invalid_json(?string $payload): void
+    {
+        $item = new DiaSemana(['dia' => $payload]);
+
+        $this->assertSame('Não informado', $item->diaStr());
+    }
+
+    public static function invalidDiaPayloadProvider(): array
+    {
+        return [
+            'null' => [null],
+            'empty' => [''],
+            'invalid-json' => ['{'],
+            'empty-array' => ['[]'],
+            'unknown-code' => [json_encode(['feriado'])],
+        ];
+    }
+
+    public function test_dia_semana_keeps_valid_json_days(): void
+    {
+        $item = new DiaSemana(['dia' => json_encode(['segunda', 'terca'])]);
+
+        $this->assertStringContainsString('Segunda-feira', $item->diaStr());
+        $this->assertStringContainsString(DiaSemana::getDias()['terca'], $item->diaStr());
+    }
+
+    public function test_address_accessors_handle_missing_city(): void
+    {
+        $empresa = new Empresa(['rua' => 'Rua A', 'numero' => '1', 'bairro' => 'Centro']);
+        $empresa->setRelation('cidade', null);
+
+        $reserva = new ReservaConfig(['rua' => 'Rua B', 'numero' => '2', 'bairro' => 'Bairro']);
+        $reserva->setRelation('cidade', null);
+
+        $this->assertStringContainsString('Cidade não informada', $empresa->endereco);
+        $this->assertStringContainsString('Cidade não informada', $reserva->endereco);
+    }
+
+    public function test_marketplace_and_ecommerce_configs_handle_invalid_json(): void
+    {
+        $ecommerce = new EcommerceConfig(['tipos_pagamento' => '{']);
+        $marketplace = new MarketPlaceConfig([
+            'segmento' => '{',
+            'tipos_pagamento' => '{',
+            'tipo_entrega' => '{',
+        ]);
+
+        $this->assertNull($ecommerce->sizeColumn());
+        $this->assertSame(0, MarketPlaceConfig::getSegmentoServico($marketplace));
+        $this->assertSame(0, $marketplace->aceitaCartao());
+        $this->assertSame('Não informado', $marketplace->tiposEntrega());
+        $this->assertNull(MarketPlaceConfig::validaCartaoEntrega(null));
+    }
+
+    public function test_product_related_descriptions_handle_missing_relationships(): void
+    {
+        $estoque = new Estoque(['produto_id' => 999]);
+        $estoque->setRelation('produto', null);
+
+        $itemNfce = new ItemNfce(['produto_id' => 999]);
+        $itemNfce->setRelation('produto', null);
+        $itemNfce->setRelation('adicionais', collect());
+
+        $produto = new Produto(['codigo_anp' => 'CODIGO_INVALIDO']);
+
+        $this->assertSame('Produto não informado', $estoque->descricao());
+        $this->assertSame('Produto não informado', $itemNfce->descricao());
+        $this->assertSame('Não informado', $produto->getDescricaoAnp());
     }
 }

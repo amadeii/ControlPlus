@@ -41,7 +41,7 @@ class ItemPedidoDelivery extends Model
     public function getAdicionaisStr(){
         $adds = "";
         foreach($this->adicionais as $a){
-            $adds .= $a->adicional->nome . ", ";
+            $adds .= ($a->adicional ? $a->adicional->nome : 'Não informado') . ", ";
         }
         $adds = substr($adds, 0, strlen($adds)-2);
         return $adds;

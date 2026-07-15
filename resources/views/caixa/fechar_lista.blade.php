@@ -5,7 +5,7 @@
     <div class="card-header">
         <h4>Fechar Caixa</h4>
         @if($item->contaEmpresa)
-        <h6 class="text-danger">{{ $item->contaEmpresa->nome }}</h6>
+        <h6 class="text-danger">{{ $item->contaEmpresa ? $item->contaEmpresa->nome : 'Não informado' }}</h6>
         @endif
         <div style="text-align: right; margin-top: -35px;">
             <a href="{{ route('caixa.index') }}" class="btn btn-danger btn-sm px-3">

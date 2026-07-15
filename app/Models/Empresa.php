@@ -34,7 +34,8 @@ class Empresa extends Model
 
     public function getEnderecoAttribute()
     {
-        return "$this->rua, $this->numero $this->bairro, " . $this->cidade->info;
+        $cidade = $this->cidade ? $this->cidade->info : 'Cidade não informada';
+        return "$this->rua, $this->numero $this->bairro, " . $cidade;
     }
 
     public function getInfoAttribute()
