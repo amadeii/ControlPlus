@@ -567,7 +567,7 @@ class NfeController extends Controller
                 if ($request->filled('deposito_id') && !$deposito_id) {
                     throw new \Exception('Depósito inválido para o local selecionado.');
                 }
-                $valor_produto =  number_format($request->valor_produtos, 2);
+                $valor_produto = __convert_value_bd($request->valor_produtos);
 
                 if($caixa != null){
                     $empresa = __objetoParaEmissao($empresa, $local_id);
@@ -587,7 +587,7 @@ class NfeController extends Controller
                     'total' => __convert_value_bd($request->valor_total),
                     'desconto' => $request->desconto ? __convert_value_bd($request->desconto) : 0,
                     'acrescimo' => $request->acrescimo ? __convert_value_bd($request->acrescimo) : 0,
-                    'valor_produtos' => __convert_value_bd($valor_produto),
+                    'valor_produtos' => $valor_produto,
                     'valor_frete' => $request->valor_frete ? __convert_value_bd($request->valor_frete) : 0,
                     'caixa_id' => $caixa ? $caixa->id : null,
                     'local_id' => $local_id,
@@ -910,7 +910,7 @@ class NfeController extends Controller
                 return $nfe;
             });
 session()->flash("flash_success", "Venda cadastrada!");
-} catch (\Exception $e) {
+} catch (\Throwable $e) {
     // echo $e->getMessage() . '<br>' . $e->getLine();
     // die;
     report($e);
