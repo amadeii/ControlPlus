@@ -475,13 +475,13 @@ class ProdutoController extends Controller
 
         if ($empresa != null) {
             if ($entrada != 1 && $cliente != null) {
-                if ($cliente->cidade && $empresa->cidade->uf != $cliente->cidade->uf) {
+                if ($empresa->cidade && $cliente->cidade && $empresa->cidade->uf != $cliente->cidade->uf) {
                     $item->cfop_atual = $item->cfop_outro_estado;
                 }
             }
 
             if ($entrada == 1 && $fornecedor != null) {
-                if ($fornecedor->cidade && $empresa->cidade->uf != $fornecedor->cidade->uf) {
+                if ($empresa->cidade && $fornecedor->cidade && $empresa->cidade->uf != $fornecedor->cidade->uf) {
                     $item->cfop_atual = $item->cfop_entrada_outro_estado;
                 }
             }
