@@ -235,6 +235,7 @@
                 <div class="col-md-2">
                     {!!Form::select('status', 'Ativo', ['1' => 'Sim', '0' => 'Não'])
                     ->attrs(['class' => 'form-select'])->required()
+                    ->value(old('status', isset($item) ? (string) $item->status : '1'))
                     !!}
                 </div>
 

@@ -45,4 +45,14 @@ class ProductModuleRegressionTest extends TestCase
         $this->assertStringContainsString('this.select();', $productJs);
         $this->assertStringContainsString('currentValue === "0,00"', $productJs);
     }
+
+    public function test_product_update_preserves_zero_status_values(): void
+    {
+        $controller = file_get_contents(app_path('Http/Controllers/ProdutoController.php'));
+        $form = file_get_contents(resource_path('views/produtos/_forms.blade.php'));
+
+        $this->assertStringContainsString("\$item->status = \$request->has('status') ? (int) \$request->input('status') : (int) \$item->status;", $controller);
+        $this->assertStringContainsString("\$item->gerenciar_estoque = \$request->has('gerenciar_estoque') ? (int) \$request->input('gerenciar_estoque') : (int) \$item->gerenciar_estoque;", $controller);
+        $this->assertStringContainsString("->value(old('status', isset(\$item) ? (string) \$item->status : '1'))", $form);
+    }
 }

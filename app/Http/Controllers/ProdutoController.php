@@ -893,7 +893,10 @@ public function update(Request $request, $id)
         ]);
 
         $emAvaliacao = false;
-        $item->fill($request->all())->save();
+        $item->fill($request->all());
+        $item->status = $request->has('status') ? (int) $request->input('status') : (int) $item->status;
+        $item->gerenciar_estoque = $request->has('gerenciar_estoque') ? (int) $request->input('gerenciar_estoque') : (int) $item->gerenciar_estoque;
+        $item->save();
 
         if($request->variavel){
 
