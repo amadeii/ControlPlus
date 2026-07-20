@@ -1288,14 +1288,26 @@ class FrontBoxController extends Controller
             }
 
             $this->validateMultiplePaymentAmountAgainstSale($request);
-
-            $nfce = DB::transaction(function () use ($request) {
-                // $caixa = __isCaixaAberto();
-                $empresa = $config = Empresa::find($request->empresa_id);
-
-                $caixa = Caixa::where('usuario_id', $request->usuario_id)
+            $usuarioId = \Auth::id() ?: $request->usuario_id;
+            $caixa = Caixa::where('usuario_id', $usuarioId)
+                ->where('empresa_id', $request->empresa_id)
                 ->where('status', 1)
                 ->first();
+            if (!$caixa) {
+                logger()->warning('SUPERSTORE_PDV_NO_OPEN_CASH', [
+                    'user_id' => $usuarioId,
+                    'empresa_id' => $request->empresa_id,
+                    'local_id' => $request->local_id ?? null,
+                    'route' => optional($request->route())->getName(),
+                    'method' => $request->method(),
+                    'item_count' => is_array($request->produto_id) ? sizeof($request->produto_id) : 0,
+                ]);
+                return response()->json('NÃ£o existe caixa aberto para finalizar a venda.', 409);
+            }
+
+            $nfce = DB::transaction(function () use ($request, $caixa) {
+                // $caixa = __isCaixaAberto();
+                $empresa = $config = Empresa::find($request->empresa_id);
 
                 $config = __objetoParaEmissao($config, $caixa->local_id);
 
@@ -1716,6 +1728,19 @@ return response()->json($nfce, 200);
 } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
     return response()->json($e->getMessage(), $e->getStatusCode());
 } catch (\Exception $e) {
+    report($e);
+    logger()->error('SUPERSTORE_PDV_ERROR', [
+        'exception_class' => get_class($e),
+        'message' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+        'user_id' => \Auth::id() ?: $request->usuario_id,
+        'empresa_id' => $request->empresa_id,
+        'local_id' => $request->local_id ?? null,
+        'route' => optional($request->route())->getName(),
+        'method' => $request->method(),
+        'produto_ids' => $request->produto_id ?? [],
+    ]);
     __createLog($request->empresa_id, 'PDV', 'erro', $e->getMessage());
     return response()->json($e->getMessage() . ", line: " . $e->getLine() . ", file: " . $e->getFile(), 401);
 }

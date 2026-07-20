@@ -827,6 +827,18 @@ if ($nfe->isItemValidade()) {
     return redirect()->route('compras.info-validade', $nfe->id);
 }
 } catch (\Exception $e) {
+    report($e);
+    logger()->error('SUPERSTORE_COMPRA_XML_ERROR', [
+        'exception_class' => get_class($e),
+        'message' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+        'user_id' => \Auth::id(),
+        'empresa_id' => $request->empresa_id,
+        'local_id' => $request->local_id ?? null,
+        'route' => optional($request->route())->getName(),
+        'method' => $request->method(),
+    ]);
     echo $e->getMessage() . '<br>' . $e->getLine();
     die;
     __createLog(request()->empresa_id, 'Importação XML', 'erro', $e->getMessage());

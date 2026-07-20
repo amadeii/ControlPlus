@@ -913,6 +913,18 @@ session()->flash("flash_success", "Venda cadastrada!");
 } catch (\Exception $e) {
     // echo $e->getMessage() . '<br>' . $e->getLine();
     // die;
+    report($e);
+    logger()->error('SUPERSTORE_COMPRA_MANUAL_ERROR', [
+        'exception_class' => get_class($e),
+        'message' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+        'user_id' => \Auth::id(),
+        'empresa_id' => $request->empresa_id,
+        'local_id' => $request->local_id ?? null,
+        'route' => optional($request->route())->getName(),
+        'method' => $request->method(),
+    ]);
     if ($request->orcamento == 1) {
         __createLog(request()->empresa_id, 'Orçamento', 'erro', $e->getMessage());
     }else if (isset($request->is_compra)) {
