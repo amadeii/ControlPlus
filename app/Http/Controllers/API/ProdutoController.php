@@ -416,10 +416,6 @@ class ProdutoController extends Controller
 
         $item = __tributacaoProdutoLocalVenda($item, $caixa->local_id);
 
-        if($entrada == 1){
-            $item->cfop_atual = $item->cfop_entrada_estadual;
-        }
-
         $empresa = Empresa::find($item->empresa_id);
         if($caixa){
             $empresa = __objetoParaEmissao($empresa, $caixa->local_id);
@@ -475,16 +471,16 @@ class ProdutoController extends Controller
             $item->valor_unitario = $item->precoComPromocao()->valor;
         }
 
-        $item->cfop_atual = $item->cfop_estadual;
+        $item->cfop_atual = $entrada == 1 ? $item->cfop_entrada_estadual : $item->cfop_estadual;
 
         if ($empresa != null) {
-            if ($cliente != null) {
+            if ($entrada != 1 && $cliente != null) {
                 if ($cliente->cidade && $empresa->cidade->uf != $cliente->cidade->uf) {
                     $item->cfop_atual = $item->cfop_outro_estado;
                 }
             }
 
-            if ($fornecedor != null) {
+            if ($entrada == 1 && $fornecedor != null) {
                 if ($fornecedor->cidade && $empresa->cidade->uf != $fornecedor->cidade->uf) {
                     $item->cfop_atual = $item->cfop_entrada_outro_estado;
                 }
