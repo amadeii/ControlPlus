@@ -860,6 +860,18 @@ class FrontBoxController extends Controller
         return 0;
     }
 
+    private function empresaPossuiNaturezaPdv($empresaId): bool
+    {
+        return Empresa::where('id', $empresaId)
+        ->whereNotNull('natureza_id_pdv')
+        ->exists();
+    }
+
+    private function naturezaPdvNaoConfiguradaResponse()
+    {
+        return response()->json('Configure a natureza de operacao padrao para finalizar a venda.', 422);
+    }
+
     private function extractTradeinCreditAmount(Request $request): float
     {
         $total = 0;
@@ -1259,6 +1271,10 @@ class FrontBoxController extends Controller
     public function store(Request $request)
     {
         try {
+            if(!$this->empresaPossuiNaturezaPdv($request->empresa_id)){
+                return $this->naturezaPdvNaoConfiguradaResponse();
+            }
+
             $dadosCartao = $this->validarBandeiraCartaoCredito($request);
             $request->merge([
                 'bandeira_cartao' => $dadosCartao['bandeira'],
@@ -1707,6 +1723,10 @@ return response()->json($nfce, 200);
 
 public function storePdv3(Request $request){
     try {
+        if(!$this->empresaPossuiNaturezaPdv($request->empresa_id)){
+            return $this->naturezaPdvNaoConfiguradaResponse();
+        }
+
         $dadosCartao = $this->validarBandeiraCartaoCredito($request);
         $request->merge([
             'bandeira_cartao' => $dadosCartao['bandeira'],
@@ -2267,6 +2287,10 @@ public function suspender3(Request $request)
 public function storeComanda(Request $request)
 {
     try {
+        if(!$this->empresaPossuiNaturezaPdv($request->empresa_id)){
+            return $this->naturezaPdvNaoConfiguradaResponse();
+        }
+
         $dadosCartao = $this->validarBandeiraCartaoCredito($request);
         $request->merge([
             'bandeira_cartao' => $dadosCartao['bandeira'],
@@ -2496,6 +2520,10 @@ return response()->json($nfce, 200);
 public function storeNfe(Request $request)
 {
     try {
+        if(!$this->empresaPossuiNaturezaPdv($request->empresa_id)){
+            return $this->naturezaPdvNaoConfiguradaResponse();
+        }
+
         $dadosCartao = $this->validarBandeiraCartaoCredito($request);
         $request->merge([
             'bandeira_cartao' => $dadosCartao['bandeira'],

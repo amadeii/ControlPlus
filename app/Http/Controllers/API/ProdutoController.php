@@ -58,10 +58,11 @@ class ProdutoController extends Controller
     public function pesquisa(Request $request)
     {
         $lista_id = $request->lista_id;
+        $deposito_id = $request->filled('deposito_id') ? (int) $request->deposito_id : null;
 
         $local_id = null;
         if(isset($request->local_id) && $request->local_id != null){
-            $local_id = $request->local_id;
+            $local_id = (int) $request->local_id;
         }else if(isset($request->usuario_id)){
             $caixa = Caixa::where('usuario_id', $request->usuario_id)->where('status', 1)->first();
             if($caixa != null){
@@ -70,7 +71,7 @@ class ProdutoController extends Controller
                 ->select('localizacaos.*')
                 ->join('usuario_localizacaos', 'usuario_localizacaos.localizacao_id', '=', 'localizacaos.id')
                 ->where('localizacaos.status', 1)->get();
-                $local_id = $caixa->local_id;
+                $local_id = (int) $caixa->local_id;
             }
         }
 
@@ -105,12 +106,25 @@ class ProdutoController extends Controller
                 ->orWhere('sku', 'LIKE', "%$pesquisa%");
             });
         })
-        ->when($local_id != null && !$request->boolean('is_compra'), function ($query) use ($local_id) {
-            return $query->whereExists(function ($sub) use ($local_id) {
+        ->when(($local_id != null || $deposito_id != null) && !$request->boolean('is_compra'), function ($query) use ($local_id, $deposito_id) {
+            return $query->whereExists(function ($sub) use ($local_id, $deposito_id) {
                 $sub->selectRaw('1')
                 ->from('estoques')
-                ->whereColumn('estoques.produto_id', 'produtos.id')
-                ->where('estoques.local_id', $local_id);
+                ->whereColumn('estoques.produto_id', 'produtos.id');
+
+                if($deposito_id != null){
+                    $sub->where(function ($q) use ($deposito_id, $local_id) {
+                        $q->where('estoques.deposito_id', $deposito_id);
+                        if($local_id != null){
+                            $q->orWhere(function ($legacy) use ($local_id) {
+                                $legacy->whereNull('estoques.deposito_id')
+                                ->where('estoques.local_id', $local_id);
+                            });
+                        }
+                    });
+                }else{
+                    $sub->where('estoques.local_id', $local_id);
+                }
             });
         })
         ->distinct('produtos.id')
@@ -119,6 +133,28 @@ class ProdutoController extends Controller
         if(is_numeric($request->pesquisa)){
             $dataAppend = ProdutoVariacao::where('produtos.empresa_id', $request->empresa_id)
             ->where('produto_variacaos.codigo_barras', $request->pesquisa)
+            ->where('produtos.status', 1)
+            ->when(($local_id != null || $deposito_id != null) && !$request->boolean('is_compra'), function ($query) use ($local_id, $deposito_id) {
+                return $query->whereExists(function ($sub) use ($local_id, $deposito_id) {
+                    $sub->selectRaw('1')
+                    ->from('estoques')
+                    ->whereColumn('estoques.produto_id', 'produtos.id');
+
+                    if($deposito_id != null){
+                        $sub->where(function ($q) use ($deposito_id, $local_id) {
+                            $q->where('estoques.deposito_id', $deposito_id);
+                            if($local_id != null){
+                                $q->orWhere(function ($legacy) use ($local_id) {
+                                    $legacy->whereNull('estoques.deposito_id')
+                                    ->where('estoques.local_id', $local_id);
+                                });
+                            }
+                        });
+                    }else{
+                        $sub->where('estoques.local_id', $local_id);
+                    }
+                });
+            })
             // ->where('produto_variacaos.codigo_barras', 'LIKE', "%$request->pesquisa%")
             ->join('produtos', 'produtos.id', '=', 'produto_variacaos.produto_id')
             ->select('produto_variacaos.*')
@@ -152,11 +188,26 @@ class ProdutoController extends Controller
         foreach($data as $p){
             if($p->gerenciar_estoque){
 
-                $estoque = Estoque::where('produto_id', $p->id)
-                ->when($local_id != null, function ($query) use ($local_id) {
-                    return $query->where('local_id', $local_id);
-                })
-                ->first();
+                $estoque = null;
+                if($deposito_id != null){
+                    $estoque = Estoque::where('produto_id', $p->id)
+                    ->where('deposito_id', $deposito_id)
+                    ->first();
+
+                    if($estoque == null && $local_id != null){
+                        $estoque = Estoque::where('produto_id', $p->id)
+                        ->whereNull('deposito_id')
+                        ->where('local_id', $local_id)
+                        ->first();
+                    }
+                }else{
+                    $estoque = Estoque::where('produto_id', $p->id)
+                    ->when($local_id != null, function ($query) use ($local_id) {
+                        return $query->where('local_id', $local_id);
+                    })
+                    ->first();
+                }
+
                 if($estoque){
                     $p->estoque_atual = number_format($estoque->quantidade, 3);
                     if($p->unidade == 'UN' || $p->unidade == 'UNID'){

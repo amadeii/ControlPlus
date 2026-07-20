@@ -216,6 +216,102 @@ class ConfirmedSuperstoreFixesTest extends TestCase
         $this->assertContains('metas_delete', $permissions);
     }
 
+    public function test_pdv_create_warns_without_natureza_but_finalization_keeps_guard(): void
+    {
+        $webController = file_get_contents(app_path('Http/Controllers/FrontBoxController.php'));
+        $apiController = file_get_contents(app_path('Http/Controllers/API/FrontBoxController.php'));
+
+        $this->assertStringContainsString('Configure a natureza de operacao padrao antes de finalizar a venda.', $webController);
+        $this->assertStringContainsString('empresaPossuiNaturezaPdv', $apiController);
+        $this->assertStringContainsString('naturezaPdvNaoConfiguradaResponse', $apiController);
+        $this->assertGreaterThanOrEqual(4, substr_count($apiController, 'empresaPossuiNaturezaPdv($request->empresa_id)'));
+        $this->assertStringContainsString('Configure a natureza de operacao padrao para finalizar a venda.', $apiController);
+    }
+
+    public function test_product_search_respects_selected_deposito_with_legacy_local_fallback(): void
+    {
+        $controller = file_get_contents(app_path('Http/Controllers/API/ProdutoController.php'));
+
+        $this->assertStringContainsString('$deposito_id = $request->filled(\'deposito_id\')', $controller);
+        $this->assertStringContainsString("where('estoques.deposito_id', \$deposito_id)", $controller);
+        $this->assertStringContainsString("whereNull('estoques.deposito_id')", $controller);
+        $this->assertStringContainsString("where('deposito_id', \$deposito_id)", $controller);
+        $this->assertStringContainsString("whereNull('deposito_id')", $controller);
+        $this->assertStringContainsString("->where('produtos.status', 1)", $controller);
+        $this->assertStringContainsString("if(\$estoque == null && \$local_id != null)", $controller);
+    }
+
+    public function test_devolucao_resource_does_not_expose_missing_create_or_store_actions(): void
+    {
+        $this->assertFalse(Route::has('devolucao.create'));
+        $this->assertFalse(Route::has('devolucao.store'));
+        $this->assertTrue(Route::has('devolucao.index'));
+        $this->assertTrue(Route::has('devolucao.xml'));
+        $this->assertTrue(Route::has('devolucao.store-xml'));
+
+        foreach ($this->projectSourceFiles() as $file => $contents) {
+            $this->assertStringNotContainsString('devolucao.create', $contents, $file);
+            $this->assertStringNotContainsString('/devolucao/create', $contents, $file);
+
+            if (str_contains($contents, 'devolucao.store')) {
+                $this->assertStringContainsString('devolucao.store-xml', $contents, $file);
+            }
+        }
+    }
+
+    public function test_troca_create_permissions_are_declared_and_routes_keep_middleware(): void
+    {
+        $permissions = collect(Permission::defaultPermissions())->pluck('name')->all();
+        $route = Route::getRoutes()->getByName('trocas.create');
+        $view = file_get_contents(resource_path('views/trocas/index.blade.php'));
+
+        $this->assertContains('troca_view', $permissions);
+        $this->assertContains('troca_create', $permissions);
+        $this->assertContains('troca_delete', $permissions);
+        $this->assertNotNull($route);
+        $this->assertContains('permission:troca_create', $route->gatherMiddleware());
+        $this->assertStringContainsString("@can('troca_create')", $view);
+    }
+
+    public function test_troca_permissions_are_synced_to_existing_admin_roles_by_existing_flows(): void
+    {
+        $empresaUtil = file_get_contents(app_path('Utils/EmpresaUtil.php'));
+        $loginController = file_get_contents(app_path('Http/Controllers/Auth/LoginController.php'));
+        $permissionController = file_get_contents(app_path('Http/Controllers/PermissionController.php'));
+
+        $this->assertStringContainsString('ensureDefaultPermissionsInDatabase', $empresaUtil);
+        $this->assertStringContainsString('$baseAdmin->permissions()->sync(Permission::all())', $empresaUtil);
+        $this->assertStringContainsString('$companyRole->permissions()->sync($permissionIds)', $empresaUtil);
+        $this->assertStringContainsString('$this->empresaUtil->syncCompanyPermissions($empresa_id)', $loginController);
+        $this->assertStringContainsString('app(EmpresaUtil::class)->syncCompanyPermissions((int) $empresaId)', $permissionController);
+    }
+
+    private function projectSourceFiles(): array
+    {
+        $files = [];
+        foreach (['app', 'resources', 'routes', 'public'] as $dir) {
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator(base_path($dir), \FilesystemIterator::SKIP_DOTS)
+            );
+
+            foreach ($iterator as $file) {
+                if (!$file->isFile()) {
+                    continue;
+                }
+
+                $extension = $file->getExtension();
+                if (!in_array($extension, ['php', 'blade.php', 'js'], true)) {
+                    continue;
+                }
+
+                $path = $file->getPathname();
+                $files[$path] = file_get_contents($path);
+            }
+        }
+
+        return $files;
+    }
+
     public function test_goals_controller_keeps_company_scope(): void
     {
         $controller = file_get_contents(app_path('Http/Controllers/MetaResultadoController.php'));

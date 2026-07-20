@@ -569,7 +569,7 @@ Route::middleware(['verificaEmpresa', 'validaPlano', 'validaContrato'])->group(f
     Route::post('/store-xml', 'CompraController@storeXml')->name('compras.store-xml');
     Route::post('/compras-finish-xml', 'CompraController@finishXml')->name('compras.finish-xml');
 
-    Route::resource('devolucao', 'DevolucaoController');
+    Route::resource('devolucao', 'DevolucaoController')->except(['create', 'store']);
     Route::resource('localizacao', 'LocalizacaoController');
     Route::get('localizacao-delete-logo/{id}', 'LocalizacaoController@removerLogo')->name('localizacao.delete-logo');
 

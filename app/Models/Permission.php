@@ -100,6 +100,8 @@ class Permission extends \Spatie\Permission\Models\Permission
             array('name' => 'pre_venda_view', 'description' => 'Visualiza pré venda'),
             array('name' => 'tradein_view', 'description' => 'Visualiza Trade-in'),
             array('name' => 'troca_view', 'description' => 'Visualiza troca'),
+            array('name' => 'troca_create', 'description' => 'Cria troca'),
+            array('name' => 'troca_delete', 'description' => 'Deleta troca'),
 
             // FINANCEIRO
             array('name' => 'conta_pagar_view', 'description' => 'Visualiza conta a pagar'),

@@ -220,10 +220,8 @@ class FrontBoxController extends Controller
             session()->flash("flash_warning", "Configure antes de continuar!");
             return redirect()->route('config.index');
         }
-
         if($config->natureza_id_pdv == null){
-            session()->flash("flash_warning", "Configure a natureza de operação padrão para continuar!");
-            return redirect()->route('config.index');
+            session()->flash("flash_warning", "Configure a natureza de operacao padrao antes de finalizar a venda.");
         }
 
         $funcionarios = Funcionario::cargosComerciais()
