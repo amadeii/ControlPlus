@@ -21,7 +21,7 @@
     <link href="/assets/vendor/admin-resources/jquery.vectormap/jquery-jvectormap-1.2.2.css">
     <link href="/assets/vendor/flatpickr/flatpickr.min.css" rel="stylesheet" type="text/css" />
 
-    <link href="/assets/css/app.css" rel="stylesheet" type="text/css" id="app-style" />
+    <link href="/assets/css/app.css?v={{ filemtime(public_path('assets/css/app.css')) }}" rel="stylesheet" type="text/css" id="app-style" />
     <!-- <link href="/assets/css/app-rtl.css" rel="stylesheet" type="text/css"/> -->
     <link href="/assets/css/icons.min.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" type="text/css" href="/assets/css/toastr.min.css">
