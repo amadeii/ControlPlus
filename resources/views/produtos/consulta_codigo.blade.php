@@ -78,6 +78,6 @@
 
 @endsection
 @section('js')
-<script src="/js/produto_unico.js"></script>
+<script src="/js/produto_unico.js?v={{ filemtime(public_path('js/produto_unico.js')) }}"></script>
 
 @endsection
