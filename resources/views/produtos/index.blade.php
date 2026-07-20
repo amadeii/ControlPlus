@@ -94,6 +94,7 @@
                     </button> 
 
                     {!!Form::open()->fill(request()->all())
+                    ->route('produtos.index')
                     ->get()->attrs(['class' => 'filtros-container'])
                     !!}
                     <div class="row mt-3 g-1">

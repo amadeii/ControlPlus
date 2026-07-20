@@ -182,11 +182,19 @@ class ProdutoController extends Controller
             return $q->where(function ($query) use ($nome) {
                 $query->where('nome', 'LIKE', "%{$nome}%")
                     ->orWhere('codigo_barras', 'LIKE', "%{$nome}%")
-                    ->orWhere('referencia', 'LIKE', "%{$nome}%");
+                    ->orWhere('codigo_barras2', 'LIKE', "%{$nome}%")
+                    ->orWhere('codigo_barras3', 'LIKE', "%{$nome}%")
+                    ->orWhere('referencia', 'LIKE', "%{$nome}%")
+                    ->orWhere('sku', 'LIKE', "%{$nome}%");
             });
         })
         ->when(!empty($request->codigo_barras), function ($q) use ($request) {
-            return $q->where('codigo_barras', 'LIKE', "%$request->codigo_barras%");
+            $codigoBarras = trim((string)$request->codigo_barras);
+            return $q->where(function ($query) use ($codigoBarras) {
+                $query->where('codigo_barras', 'LIKE', "%{$codigoBarras}%")
+                ->orWhere('codigo_barras2', 'LIKE', "%{$codigoBarras}%")
+                ->orWhere('codigo_barras3', 'LIKE', "%{$codigoBarras}%");
+            });
         })
         ->when(!empty($request->marca_id), function ($q) use ($request) {
             return $q->where('marca_id', $request->marca_id);

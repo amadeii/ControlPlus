@@ -78,7 +78,7 @@
 
                                         @can('produtos_delete')
                                         <li>
-                                            <button class="dropdown-item text-danger btn-delete" data-id="{{ $item->id }}">
+                                            <button type="button" class="dropdown-item text-danger btn-delete" data-id="{{ $item->id }}">
                                                 <i class="ri-delete-bin-line me-1"></i> Excluir
                                             </button>
                                         </li>

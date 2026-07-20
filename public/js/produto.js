@@ -442,6 +442,14 @@ $(document).ready(function() {
     });
 });
 
+$(document).on("focus", "#inp-valor_compra, #inp-valor_unitario, #inp-valor_minimo_venda, #inp-valor_prazo", function () {
+    const currentValue = ($(this).val() || "").trim();
+    if (currentValue === "0" || currentValue === "0,00") {
+        $(this).val("");
+    }
+    this.select();
+});
+
 function changeVariavel() {
     let variavel = $('#inp-variavel').val()
     if (variavel == 1) {
