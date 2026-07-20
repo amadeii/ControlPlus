@@ -4,19 +4,24 @@
     <div class="row">
         <div class="card">
             <div class="card-body">
-                
+
                 <div class="col-lg-12">
                     {!!Form::open()->fill(request()->all())
                     ->get()
                     !!}
+                    <input type="hidden" name="empresa_id" value="{{ request()->empresa_id }}">
+                    <input type="hidden" name="local_id" value="{{ request()->local_id }}">
                     <div class="row mt-3">
                         <div class="col-md-4">
                             {!!Form::select('produto_id', 'Pesquisar por produto')
                             ->options($produto != null ? [$produto->id => $produto->nome] : [])
+                            ->attrs(['class' => 'form-control produto-consulta-codigo-produto'])
                             !!}
                         </div>
                         <div class="col-md-2">
-                            {!!Form::text('codigo', 'Pesquisar por código')
+                            {!!Form::select('codigo', 'Pesquisar por código')
+                            ->options(request()->codigo ? [request()->codigo => request()->codigo] : [])
+                            ->attrs(['class' => 'form-control produto-consulta-codigo-codigo'])
                             !!}
                         </div>
                         <div class="col-md-3 text-left ">
@@ -36,7 +41,7 @@
                                     <th>Produto</th>
                                     <th>Código</th>
                                     <th>Observação</th>
-                                    
+
                                     <th width="10%">Ações</th>
                                 </tr>
                             </thead>
@@ -56,7 +61,7 @@
 
                                 @empty
                                 <tr>
-                                    <td colspan="4" class="text-center">Nada encontrado</td>
+                                    <td colspan="4" class="text-center">Nenhum código disponível para os filtros informados</td>
                                 </tr>
                                 @endforelse
                             </tbody>

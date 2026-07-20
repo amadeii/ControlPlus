@@ -786,6 +786,8 @@ Route::middleware(['verificaEmpresa', 'validaPlano', 'validaContrato'])->group(f
 
     Route::get('/imprimir-apontamento/{id}', 'ApontamentoController@imprimir')->name('apontamento.imprimir');
 
+    Route::get('produto-consulta-codigo/produtos', 'ProdutoConsultaCodigoController@produtos')->name('produto-consulta-codigo.produtos');
+    Route::get('produto-consulta-codigo/codigos', 'ProdutoConsultaCodigoController@codigos')->name('produto-consulta-codigo.codigos');
     Route::resource('produto-consulta-codigo', 'ProdutoConsultaCodigoController');
 
     Route::get('produtos-import', 'ProdutoController@import')->name('produtos.import');
