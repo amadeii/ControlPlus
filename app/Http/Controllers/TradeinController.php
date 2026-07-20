@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 
 class TradeinController extends Controller
 {
@@ -90,7 +91,7 @@ class TradeinController extends Controller
 
     private function resolveTradeinSnapshot(Tradein $tradein, ?Cliente $cliente = null): array
     {
-        $cliente = $cliente ?: ($tradein->cliente_id ? Cliente::find($tradein->cliente_id) : null);
+        $cliente = $cliente ?: $this->findClienteDaEmpresa($tradein->cliente_id, (int) $tradein->empresa_id);
         $checklistTemplate = $this->checklistTemplate();
         $snapshot = is_array($tradein->avaliacao_snapshot) ? $tradein->avaliacao_snapshot : [];
 
@@ -160,6 +161,15 @@ class TradeinController extends Controller
             'observacao_geral' => trim((string) Arr::get($snapshot, 'observacao_geral', $tradein->observacao_tecnico ?? '')),
             'versao' => Arr::get($snapshot, 'versao', 'v2'),
         ];
+    }
+
+    private function findClienteDaEmpresa($clienteId, int $empresaId): ?Cliente
+    {
+        if (!$clienteId || !$empresaId) {
+            return null;
+        }
+
+        return Cliente::where('empresa_id', $empresaId)->find($clienteId);
     }
 
     private function buildTradeinSnapshotFromRequest(Request $request, Tradein $tradein, ?Cliente $cliente = null): array
@@ -254,7 +264,7 @@ class TradeinController extends Controller
             $tradein->save();
         }
 
-        $cliente = $tradein->cliente_id ? Cliente::find($tradein->cliente_id) : null;
+        $cliente = $this->findClienteDaEmpresa($tradein->cliente_id, (int) $tradein->empresa_id);
         $snapshot = $this->resolveTradeinSnapshot($tradein, $cliente);
         if (!Arr::get($snapshot, 'cabecalho.numero_venda') && $request->filled('numero_venda')) {
             Arr::set($snapshot, 'cabecalho.numero_venda', trim((string) $request->numero_venda));
@@ -276,7 +286,9 @@ class TradeinController extends Controller
         $clienteIds = $tradeins->pluck('cliente_id')->filter()->unique()->values();
         $clientes = $clienteIds->isEmpty()
             ? collect()
-            : Cliente::whereIn('id', $clienteIds)->pluck('razao_social', 'id');
+            : Cliente::where('empresa_id', $request->empresa_id)
+                ->whereIn('id', $clienteIds)
+                ->pluck('razao_social', 'id');
 
         return view('tradein.index', compact('tradeins', 'clientes'));
     }
@@ -299,7 +311,7 @@ class TradeinController extends Controller
     {
         $tradein = Tradein::where('empresa_id', $request->empresa_id)->findOrFail($id);
         __validaObjetoEmpresa($tradein);
-        $cliente = $tradein->cliente_id ? Cliente::find($tradein->cliente_id) : null;
+        $cliente = $this->findClienteDaEmpresa($tradein->cliente_id, (int) $tradein->empresa_id);
 
         $concluir = (bool) $request->boolean('concluir_avaliacao');
 
@@ -313,7 +325,11 @@ class TradeinController extends Controller
             'pecas' => 'nullable|array',
             'pecas.*.descricao' => 'nullable|string|max:255',
             'pecas.*.valor' => 'nullable|string|max:50',
-            'pecas.*.produto_id' => 'nullable|integer|exists:produtos,id',
+            'pecas.*.produto_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('produtos', 'id')->where('empresa_id', (int) $tradein->empresa_id),
+            ],
             'checklist' => 'required|array',
             'checklist.*.resultado' => 'nullable|in:SIM,NAO',
             'checklist.*.observacao' => 'nullable|string|max:500',
@@ -580,8 +596,8 @@ class TradeinController extends Controller
             return response()->json('Valor inválido para uso de crédito.', 422);
         }
 
-        $cliente = Cliente::find($clienteId);
-        if (!$cliente || (int) $cliente->empresa_id !== $empresaId) {
+        $cliente = $this->findClienteDaEmpresa($clienteId, $empresaId);
+        if (!$cliente) {
             abort(403);
         }
 
@@ -717,7 +733,7 @@ class TradeinController extends Controller
         if (!$this->hasSavedEvaluation($tradein)) {
             abort(403, 'Salve a avaliação do trade-in antes de gerar o termo.');
         }
-        $cliente = $tradein->cliente_id ? Cliente::find($tradein->cliente_id) : null;
+        $cliente = $this->findClienteDaEmpresa($tradein->cliente_id, (int) $tradein->empresa_id);
         $snapshot = $this->resolveTradeinSnapshot($tradein, $cliente);
         $checklistTemplate = $this->checklistTemplate();
 
@@ -737,10 +753,20 @@ class TradeinController extends Controller
 
     public function storeWeb(Request $request)
     {
-        $request->validate([
+        $empresaId = (int) $request->empresa_id;
+
+        $validated = $request->validate([
             'empresa_id'       => 'required|integer',
-            'cliente_id'       => 'required|integer',
-            'produto_id'       => 'nullable|integer|exists:produtos,id',
+            'cliente_id'       => [
+                'required',
+                'integer',
+                Rule::exists('clientes', 'id')->where('empresa_id', $empresaId),
+            ],
+            'produto_id'       => [
+                'nullable',
+                'integer',
+                Rule::exists('produtos', 'id')->where('empresa_id', $empresaId),
+            ],
             'nome_item'        => 'required_without:produto_id|nullable|string|max:255',
             'serial_number'    => 'required|string|max:120',
             'valor_pretendido' => 'nullable',
@@ -750,9 +776,9 @@ class TradeinController extends Controller
             'nome_item.required_without' => 'Informe o nome do item ou selecione um produto do catálogo.',
         ]);
 
-        $serial = trim($request->serial_number);
+        $serial = trim((string) $validated['serial_number']);
 
-        $serialExistente = Tradein::where('empresa_id', $request->empresa_id)
+        $serialExistente = Tradein::where('empresa_id', $empresaId)
             ->where('serial_number', $serial)
             ->whereNotIn('status', [Tradein::STATUS_CANCELLED])
             ->exists();
@@ -764,24 +790,25 @@ class TradeinController extends Controller
             ], 422);
         }
 
-        $nomeItem = $request->nome_item;
-        if ($request->produto_id) {
-            $produto = \App\Models\Produto::find($request->produto_id);
+        $produtoId = $validated['produto_id'] ?? null;
+        $nomeItem = $validated['nome_item'] ?? null;
+        if ($produtoId) {
+            $produto = Produto::where('empresa_id', $empresaId)->find($produtoId);
             if ($produto && !$nomeItem) {
                 $nomeItem = $produto->nome;
             }
         }
 
         $tradein = Tradein::create([
-            'empresa_id'        => $request->empresa_id,
-            'cliente_id'        => $request->cliente_id,
+            'empresa_id'        => $empresaId,
+            'cliente_id'        => $validated['cliente_id'],
             'created_by_user_id' => Auth::id(),
             'status'            => Tradein::STATUS_SUBMITTED,
             'nome_item'         => $nomeItem,
-            'produto_id'        => $request->produto_id,
+            'produto_id'        => $produtoId,
             'serial_number'     => $serial,
-            'valor_pretendido'  => $request->valor_pretendido ? __convert_value_bd($request->valor_pretendido) : null,
-            'observacao_vendedor' => $request->observacao,
+            'valor_pretendido'  => !empty($validated['valor_pretendido']) ? __convert_value_bd($validated['valor_pretendido']) : null,
+            'observacao_vendedor' => $validated['observacao'] ?? null,
         ]);
 
         return response()->json([

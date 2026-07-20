@@ -12,6 +12,7 @@ use App\Models\TradeinInventoryItem;
 use App\Models\TradeinInventoryItemCustoPecaOsLancamento;
 use App\Services\TradeinAssistenciaFinalizacaoService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class TradeinInventoryController extends Controller
 {
@@ -39,7 +40,9 @@ class TradeinInventoryController extends Controller
         $clienteIds = $items->pluck('cliente_id')->filter()->unique()->values();
         $clientes = $clienteIds->isEmpty()
             ? collect()
-            : Cliente::whereIn('id', $clienteIds)->pluck('razao_social', 'id');
+            : Cliente::where('empresa_id', $request->empresa_id)
+                ->whereIn('id', $clienteIds)
+                ->pluck('razao_social', 'id');
 
         return view('tradein.inventory', compact('items', 'clientes', 'status', 'ordensServicoPorTradein'));
     }
@@ -73,7 +76,9 @@ class TradeinInventoryController extends Controller
         $item = TradeinInventoryItem::where('empresa_id', $request->empresa_id)->findOrFail($id);
         __validaObjetoEmpresa($item);
 
-        $produto = $item->produto_id ? Produto::find($item->produto_id) : null;
+        $produto = $item->produto_id
+            ? Produto::where('empresa_id', $request->empresa_id)->find($item->produto_id)
+            : null;
 
         $historicoCustoAssistenciaOs = TradeinInventoryItemCustoPecaOsLancamento::with(['ordemServico', 'user', 'peca'])
             ->where('tradein_inventory_item_id', $item->id)
@@ -103,7 +108,11 @@ class TradeinInventoryController extends Controller
         __validaObjetoEmpresa($item);
 
         $request->validate([
-            'produto_id'         => 'nullable|integer|exists:produtos,id',
+            'produto_id'         => [
+                'nullable',
+                'integer',
+                Rule::exists('produtos', 'id')->where('empresa_id', (int) $request->empresa_id),
+            ],
             'serial'             => 'nullable|string|max:120',
             'descricao_item'     => 'nullable|string|max:255',
             'observacao_tecnica' => 'nullable|string|max:1000',
