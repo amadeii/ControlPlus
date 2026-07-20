@@ -345,9 +345,9 @@
                                 <i class="ri-user-line fs-22"></i>
 
                             </span>
-                            <span class="d-lg-flex flex-column gap-1 d-none">
-                                <h5 class="my-0"> {{ Auth::user()->name }}</h5>
-                                <h6 class="my-0 fw-normal">{{ Auth::user()->tipo }}</h6>
+                            <span class="account-user-info d-lg-flex flex-column gap-1 d-none">
+                                <h5 class="account-user-name my-0 text-truncate"> {{ Auth::user()->name }}</h5>
+                                <h6 class="account-user-type my-0 fw-normal text-truncate">{{ Auth::user()->tipo }}</h6>
 
                             </span>
                         </a>

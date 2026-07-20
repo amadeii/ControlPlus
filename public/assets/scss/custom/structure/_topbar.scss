@@ -271,6 +271,27 @@ html[data-bs-theme="dark"] {
     transition: none;
 }
 
+.navbar-custom {
+    .topbar-menu,
+    .topbar-menu > li {
+        min-width: 0;
+    }
+
+    .nav-user {
+        max-width: min(320px, calc(100vw - 220px));
+        overflow: hidden;
+
+        .account-user-info {
+            min-width: 0;
+        }
+
+        .account-user-name,
+        .account-user-type {
+            max-width: 220px;
+        }
+    }
+}
+
 
 
 // fullscreen exit icon

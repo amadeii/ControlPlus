@@ -16981,6 +16981,22 @@ html[data-bs-theme="dark"] #light-dark-mode .ri-moon-fill::before {
     transition: none;
 }
 
+.navbar-custom .topbar-menu,
+.navbar-custom .topbar-menu > li {
+    min-width: 0;
+}
+.navbar-custom .nav-user {
+    max-width: min(320px, calc(100vw - 220px));
+    overflow: hidden;
+}
+.navbar-custom .nav-user .account-user-info {
+    min-width: 0;
+}
+.navbar-custom .nav-user .account-user-name,
+.navbar-custom .nav-user .account-user-type {
+    max-width: 220px;
+}
+
 .fullscreen-enable .ri-fullscreen-line::before {
     content: "\ed9a";
 }
