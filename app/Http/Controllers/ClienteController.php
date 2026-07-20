@@ -166,7 +166,7 @@ class ClienteController extends Controller
 
     public function store(Request $request)
     {
-        // $this->__validate($request);
+        $this->__validate($request);
         try {
 
             $file_name = '';
@@ -182,14 +182,9 @@ class ClienteController extends Controller
                 'imagem' => $file_name,
             ]);
 
-            $cliente = Cliente::where('empresa_id', $request->empresa_id)
-            ->where('cpf_cnpj', $request->cpf_cnpj)
-            ->first();
-
-            // if($cliente){
-            //     session()->flash("flash_error", "Cliente já esta cadastrado");
-            // }
-            $cliente = Cliente::create($request->all());
+            $data = $request->all();
+            $data['status'] = $request->has('status') ? (int) $request->input('status') : 1;
+            $cliente = Cliente::create($data);
             __setUltimoNumeroSequencial(request()->empresa_id, 'clientes', $request->numero_sequencial);
 
             $this->cadastraTributacao($cliente, $request);
@@ -208,12 +203,13 @@ class ClienteController extends Controller
                 __setUltimoNumeroSequencial(request()->empresa_id, 'fornecedors', $numero+1);
             }
 
-            if($request->dias_vencimento[0] != ''){
-                for($i=0; $i<sizeof($request->dias_vencimento); $i++){
+            $diasVencimento = $request->input('dias_vencimento', []);
+            if(isset($diasVencimento[0]) && $diasVencimento[0] != ''){
+                for($i=0; $i<sizeof($diasVencimento); $i++){
                     FaturaCliente::create([
                         'cliente_id' => $cliente->id,
                         'tipo_pagamento' => $request->tipo_pagamento[$i] ?? null,
-                        'dias_vencimento' => $request->dias_vencimento[$i]
+                        'dias_vencimento' => $diasVencimento[$i]
                     ]);
                 }
             }
@@ -258,6 +254,7 @@ class ClienteController extends Controller
     {
         $this->__validate($request, $id);
         $item = Cliente::findOrFail($id);
+        __validaObjetoEmpresa($item);
         try {
 
             $file_name = $item->imagem;
@@ -272,7 +269,9 @@ class ClienteController extends Controller
                 'valor_credito' => $request->valor_credito ? __convert_value_bd($request->valor_credito) : 0,
                 'imagem' => $file_name,
             ]);
-            $item->fill($request->all())->save();
+            $data = $request->all();
+            $data['status'] = $request->has('status') ? (int) $request->input('status') : (int) $item->status;
+            $item->fill($data)->save();
 
             $this->cadastraTributacao($item, $request);
 
@@ -295,13 +294,14 @@ class ClienteController extends Controller
             }
 
 
-            if($request->dias_vencimento[0] != ''){
+            $diasVencimento = $request->input('dias_vencimento', []);
+            if(isset($diasVencimento[0]) && $diasVencimento[0] != ''){
                 $item->fatura()->delete();
-                for($i=0; $i<sizeof($request->dias_vencimento); $i++){
+                for($i=0; $i<sizeof($diasVencimento); $i++){
                     FaturaCliente::create([
                         'cliente_id' => $item->id,
                         'tipo_pagamento' => $request->tipo_pagamento[$i] ?? null,
-                        'dias_vencimento' => $request->dias_vencimento[$i]
+                        'dias_vencimento' => $diasVencimento[$i]
                     ]);
                 }
             }
@@ -319,7 +319,7 @@ class ClienteController extends Controller
     {
         $rules = [
             'razao_social' => 'required',
-            'cpf_cnpj' => $id == null ? [ 'required', new ValidaDocumentoCliente($request->empresa_id) ] : 'required',
+            'cpf_cnpj' => [ 'required', new ValidaDocumentoCliente($request->empresa_id, $id) ],
             // 'ie' => 'required',
             'telefone' => 'required',
             'cidade_id' => 'required',
@@ -425,13 +425,12 @@ class ClienteController extends Controller
     public function destroy($id)
     {
         $item = Cliente::findOrFail($id);
+        __validaObjetoEmpresa($item);
 
         if(sizeof($item->vendas) > 0){
             session()->flash("flash_warning", "Não é possível remover um cliente com vendas!");
             return redirect()->back();
         }
-        __validaObjetoEmpresa($item);
-        
         $item->tributacao()->delete();
         try {
             $descricaoLog = $item->razao_social;
@@ -599,8 +598,10 @@ class ClienteController extends Controller
     public function destroySelecet(Request $request)
     {
         $removidos = 0;
-        for($i=0; $i<sizeof($request->item_delete); $i++){
-            $item = Cliente::findOrFail($request->item_delete[$i]);
+        $itens = $request->input('item_delete', []);
+        for($i=0; $i<sizeof($itens); $i++){
+            $item = Cliente::findOrFail($itens[$i]);
+            __validaObjetoEmpresa($item);
             if(sizeof($item->vendas) > 0){
                 session()->flash("flash_warning", "Não é possível remover um cliente com vendas!");
                 return redirect()->back();

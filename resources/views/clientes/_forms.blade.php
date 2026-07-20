@@ -87,6 +87,7 @@
                         </div>
                         <div class="col-md-2">
                             {!!Form::select('status', 'Ativo', [ 1 => 'Sim', 0 => 'Não'])->attrs(['class' => 'form-select'])
+                            ->value(old('status', isset($item) ? (string) $item->status : '1'))
                             !!}
                         </div>
                         <div class="col-md-4">
@@ -389,11 +390,28 @@
     <script type="text/javascript" src="/js/busca_cep.js"></script>
     <script>
 
+        const setCnpjValueIfEmpty = (selector, value) => {
+            const current = ($(selector).val() || '').trim()
+            if (current === '' && value) {
+                $(selector).val(value)
+            }
+        }
+
         $(document).on("blur", "#inp-cpf_cnpj", function () {
 
             let cpf_cnpj = $(this).val().replace(/[^0-9]/g,'')
+            let hasManualData = [
+                '#inp-razao_social',
+                '#inp-nome_fantasia',
+                '#inp-rua',
+                '#inp-numero',
+                '#inp-bairro',
+                '#inp-cep',
+                '#inp-email',
+                '#inp-telefone'
+            ].some((selector) => ($(selector).val() || '').trim() !== '')
 
-            if(cpf_cnpj.length == 14){
+            if(cpf_cnpj.length == 14 && !hasManualData){
                 $.get('https://publica.cnpj.ws/cnpj/' + cpf_cnpj)
                 .done((data) => {
                     if (data!= null) {
@@ -402,21 +420,23 @@
                             ie = data.estabelecimento.inscricoes_estaduais[0].inscricao_estadual
                         }
 
-                        $('#inp-ie').val(ie)
+                        setCnpjValueIfEmpty('#inp-ie', ie)
                         if(ie != ""){
                             $('#inp-contribuinte').val(1).change()
                         }
-                        $('#inp-razao_social').val(data.razao_social)
-                        $('#inp-nome_fantasia').val(data.estabelecimento.nome_fantasia)
-                        $("#inp-rua").val(data.estabelecimento.tipo_logradouro + " " + data.estabelecimento.logradouro)
-                        $('#inp-numero').val(data.estabelecimento.numero)
-                        $("#inp-bairro").val(data.estabelecimento.bairro);
+                        setCnpjValueIfEmpty('#inp-razao_social', data.razao_social)
+                        setCnpjValueIfEmpty('#inp-nome_fantasia', data.estabelecimento.nome_fantasia)
+                        setCnpjValueIfEmpty("#inp-rua", data.estabelecimento.tipo_logradouro + " " + data.estabelecimento.logradouro)
+                        setCnpjValueIfEmpty('#inp-numero', data.estabelecimento.numero)
+                        setCnpjValueIfEmpty("#inp-bairro", data.estabelecimento.bairro);
                         let cep = data.estabelecimento.cep.replace(/[^\d]+/g, '');
-                        $('#inp-cep').val(cep.substring(0, 5) + '-' + cep.substring(5, 9))
-                        $('#inp-email').val(data.estabelecimento.email)
-                        $('#inp-telefone').val(data.estabelecimento.telefone1)
+                        setCnpjValueIfEmpty('#inp-cep', cep.substring(0, 5) + '-' + cep.substring(5, 9))
+                        setCnpjValueIfEmpty('#inp-email', data.estabelecimento.email)
+                        setCnpjValueIfEmpty('#inp-telefone', data.estabelecimento.telefone1)
 
-                        findCidade(data.estabelecimento.cidade.ibge_id)
+                        if(!$('#inp-cidade_id').val()){
+                            findCidade(data.estabelecimento.cidade.ibge_id)
+                        }
 
                     }
                 })

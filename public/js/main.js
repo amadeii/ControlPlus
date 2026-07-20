@@ -331,7 +331,7 @@ function convertFloatToMoeda(value) {
     });
 }
 
-$(".btn-delete").on("click", function (e) {
+$(document).on("click", ".btn-delete", function (e) {
     e.preventDefault();
     var form = $(this).parents("form").attr("id");
     
