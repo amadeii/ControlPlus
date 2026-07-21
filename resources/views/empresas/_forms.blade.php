@@ -393,7 +393,7 @@
 
         $.get(path_url + "api/cidadePorCodigoIbge/" + codigo_ibge)
         .done((res) => {
-            var newOption = new Option(res.info, res.id, false, false);
+            var newOption = new Option(res.info, res.id, true, true);
             $('#inp-cidade_id').append(newOption).trigger('change');
         })
         .fail((err) => {
