@@ -137,6 +137,14 @@
     @endif
     @endif
 
+    <div class="col-md-3">
+        {!!Form::text('serial', 'Serial')
+        ->attrs(['class' => 'form-control'])
+        ->value(request('serial') ?: old('serial'))
+        !!}
+        <small class="text-muted">Obrigatorio apenas para produto serializado.</small>
+    </div>
+
     <input name="produto_variacao_id" id="produto_variacao_id" type="hidden">
     <hr class="mt-4">
     <div class="col-12" style="text-align: right;">

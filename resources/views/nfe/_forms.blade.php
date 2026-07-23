@@ -423,26 +423,26 @@
                                             <input style="width: 150px" value="{{ __moeda($prod->sub_total) }}" class="form-control moeda sub_total next" type="tel" name="sub_total[]" id="inp-subtotal">
                                         </td>
                                         <td width="120">
-                                            <input style="width: 120px" value="{{ $prod->perc_icms }}" class="form-control percentual" type="tel" name="perc_icms[]" id="inp-perc_icms">
+                                            <input style="width: 120px" value="{{ $prod->perc_icms }}" class="form-control percentual @isset($isCompra) ignore @endisset" type="tel" name="perc_icms[]" id="inp-perc_icms">
                                         </td>
                                         <td width="120">
-                                            <input style="width: 120px" value="{{ $prod->perc_pis }}" class="form-control percentual" type="tel" name="perc_pis[]" id="inp-perc_pis">
+                                            <input style="width: 120px" value="{{ $prod->perc_pis }}" class="form-control percentual @isset($isCompra) ignore @endisset" type="tel" name="perc_pis[]" id="inp-perc_pis">
                                         </td>
                                         <td width="120">
-                                            <input style="width: 120px" value="{{ $prod->perc_cofins }}" class="form-control percentual" type="tel" name="perc_cofins[]" id="inp-perc_cofins">
+                                            <input style="width: 120px" value="{{ $prod->perc_cofins }}" class="form-control percentual @isset($isCompra) ignore @endisset" type="tel" name="perc_cofins[]" id="inp-perc_cofins">
                                         </td>
                                         <td width="120">
-                                            <input style="width: 120px" value="{{ $prod->perc_ipi }}" class="form-control percentual perc_ipi" type="tel" name="perc_ipi[]" id="inp-perc_ipi">
+                                            <input style="width: 120px" value="{{ $prod->perc_ipi }}" class="form-control percentual perc_ipi @isset($isCompra) ignore @endisset" type="tel" name="perc_ipi[]" id="inp-perc_ipi">
                                         </td>
                                         <td width="120">
                                             <input style="width: 120px" value="{{ $prod->perc_red_bc }}" class="form-control percentual ignore" type="tel" name="perc_red_bc[]" id="inp-perc_red_bc">
                                         </td>
                                         <td width="120">
-                                            <input style="width: 120px" required value="{{ $prod->cfop }}" class="form-control cfop" type="tel" name="cfop[]" id="inp-cfop_estadual">
+                                            <input style="width: 120px" @if(!isset($isCompra)) required @endif value="{{ $prod->cfop }}" class="form-control cfop @isset($isCompra) ignore @endisset" type="tel" name="cfop[]" id="inp-cfop_estadual">
                                         </td>
 
                                         <td width="150">
-                                            <input style="width: 120px" required value="{{ $prod->ncm }}" class="form-control ncm" type="tel" name="ncm[]" id="inp-ncm2">
+                                            <input style="width: 120px" @if(!isset($isCompra)) required @endif value="{{ $prod->ncm }}" class="form-control ncm @isset($isCompra) ignore @endisset" type="tel" name="ncm[]" id="inp-ncm2">
                                         </td>
                                         <td width="120">
                                             <input style="width: 120px" value="{{ $prod->codigo_beneficio_fiscal }}" class="form-control ignore codigo_beneficio_fiscal" type="text" name="codigo_beneficio_fiscal[]">
@@ -539,26 +539,26 @@
                                             <input style="width: 120px" readonly class="form-control moeda sub_total sub_total_new next" type="tel" name="sub_total[]" id="inp-subtotal">
                                         </td>
                                         <td width="120">
-                                            <input style="width: 120px" class="form-control percentual" type="tel" name="perc_icms[]" id="inp-perc_icms">
+                                            <input style="width: 120px" class="form-control percentual @isset($isCompra) ignore @endisset" type="tel" name="perc_icms[]" id="inp-perc_icms">
                                         </td>
                                         <td width="120">
-                                            <input style="width: 120px" class="form-control percentual" type="tel" name="perc_pis[]" id="inp-perc_pis">
+                                            <input style="width: 120px" class="form-control percentual @isset($isCompra) ignore @endisset" type="tel" name="perc_pis[]" id="inp-perc_pis">
                                         </td>
                                         <td width="120">
-                                            <input style="width: 120px" class="form-control percentual" type="tel" name="perc_cofins[]" id="inp-perc_cofins">
+                                            <input style="width: 120px" class="form-control percentual @isset($isCompra) ignore @endisset" type="tel" name="perc_cofins[]" id="inp-perc_cofins">
                                         </td>
                                         <td width="120">
-                                            <input style="width: 120px" class="form-control percentual perc_ipi" type="tel" name="perc_ipi[]" id="inp-perc_ipi">
+                                            <input style="width: 120px" class="form-control percentual perc_ipi @isset($isCompra) ignore @endisset" type="tel" name="perc_ipi[]" id="inp-perc_ipi">
                                         </td>
                                         <td width="120">
                                             <input style="width: 120px" class="form-control percentual ignore" type="tel" name="perc_red_bc[]" id="inp-perc_red_bc">
                                         </td>
                                         <td width="150">
-                                            <input style="width: 120px" required class="form-control cfop" type="tel" name="cfop[]" id="inp-cfop_estadual">
+                                            <input style="width: 120px" @if(!isset($isCompra)) required @endif class="form-control cfop @isset($isCompra) ignore @endisset" type="tel" name="cfop[]" id="inp-cfop_estadual">
                                         </td>
 
                                         <td width="150">
-                                            <input style="width: 120px" required class="form-control ncm" type="tel" name="ncm[]" id="inp-ncm2">
+                                            <input style="width: 120px" @if(!isset($isCompra)) required @endif class="form-control ncm @isset($isCompra) ignore @endisset" type="tel" name="ncm[]" id="inp-ncm2">
                                         </td>
 
                                         <td width="120">

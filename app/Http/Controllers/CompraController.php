@@ -1094,30 +1094,77 @@ public function setCodigoUnico($id)
 
 public function setarCodigoUnico(Request $request)
 {
-    $nfe = Nfe::findOrFail($request->nfe_id);
-    $localId = $nfe->local_id;
+    try {
+        DB::transaction(function () use ($request) {
+            $nfe = Nfe::with('itens')->findOrFail($request->nfe_id);
+            __validaObjetoEmpresa($nfe);
+            $localId = $nfe->local_id;
+            $depositoId = $nfe->deposito_id;
 
-    if (!$localId && function_exists('__getLocalPadraoEmpresa')) {
-        $localPadrao = __getLocalPadraoEmpresa((int)$nfe->empresa_id);
-        if ($localPadrao && isset($localPadrao->id)) {
-            $localId = (int)$localPadrao->id;
-        }
+            if (!$localId && function_exists('__getLocalPadraoEmpresa')) {
+                $localPadrao = __getLocalPadraoEmpresa((int)$nfe->empresa_id);
+                if ($localPadrao && isset($localPadrao->id)) {
+                    $localId = (int)$localPadrao->id;
+                }
+            }
+
+            $codigosInformados = [];
+            for ($i = 0; $i < sizeof($request->produto_id); $i++) {
+                $produtoId = (int)$request->produto_id[$i];
+                $codigo = trim((string)($request->codigo[$i] ?? ''));
+                $itemNfeId = isset($request->item_nfe_id[$i]) ? (int)$request->item_nfe_id[$i] : null;
+
+                if ($codigo === '') {
+                    throw new \Exception('Informe o serial de todos os produtos serializados.');
+                }
+
+                $itemCompra = $nfe->itens->first(function ($item) use ($produtoId, $itemNfeId) {
+                    if ($itemNfeId) {
+                        return (int)$item->id === $itemNfeId && (int)$item->produto_id === $produtoId;
+                    }
+                    return (int)$item->produto_id === $produtoId;
+                });
+
+                if (!$itemCompra) {
+                    throw new \Exception('Item da compra invÃ¡lido para o serial informado.');
+                }
+
+                $chave = $produtoId . '|' . strtoupper($codigo);
+                if (isset($codigosInformados[$chave])) {
+                    throw new \Exception("Serial {$codigo} duplicado nesta compra.");
+                }
+                $codigosInformados[$chave] = true;
+
+                $serialExistente = ProdutoUnico::where('produto_id', $produtoId)
+                    ->where('codigo', $codigo)
+                    ->where('tipo', 'entrada')
+                    ->lockForUpdate()
+                    ->exists();
+                if ($serialExistente) {
+                    throw new \Exception("Serial {$codigo} jÃ¡ cadastrado para este produto.");
+                }
+
+                ProdutoUnico::create([
+                    'nfe_id' => $nfe->id,
+                    'nfce_id' => null,
+                    'item_nfe_id' => $itemCompra->id,
+                    'item_nfce_id' => null,
+                    'produto_id' => $produtoId,
+                    'local_id' => $localId,
+                    'deposito_id' => $depositoId,
+                    'codigo' => $codigo,
+                    'observacao' => $request->observacao[$i] ?? '',
+                    'tipo' => 'entrada',
+                    'em_estoque' => 1,
+                    'status_key' => StatusKeyUtil::DEFAULT_STATUS,
+                ]);
+            }
+        });
+    } catch (\Throwable $e) {
+        session()->flash('flash_error', 'Algo deu errado: ' . $e->getMessage());
+        return redirect()->back()->withInput();
     }
 
-    for ($i = 0; $i < sizeof($request->produto_id); $i++) {
-
-        ProdutoUnico::create([
-            'nfe_id' => $request->nfe_id,
-            'nfce_id' => null,
-            'produto_id' => $request->produto_id[$i],
-            'local_id' => $localId,
-            'codigo' => $request->codigo[$i],
-            'observacao' => $request->observacao[$i] ?? '',
-            'tipo' => 'entrada',
-            'em_estoque' => 1,
-            'status_key' => StatusKeyUtil::DEFAULT_STATUS,
-        ]);
-    }
     session()->flash('flash_success', 'Dados definidos com sucesso!');
     return redirect()->route('compras.index');
 }

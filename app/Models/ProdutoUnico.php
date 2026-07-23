@@ -12,6 +12,8 @@ class ProdutoUnico extends Model
     protected $fillable = [
         'nfe_id',
         'nfce_id',
+        'item_nfe_id',
+        'item_nfce_id',
         'produto_id',
         'local_id',
         'deposito_id',
@@ -41,6 +43,16 @@ class ProdutoUnico extends Model
 
     public function produto(){
         return $this->belongsTo(Produto::class, 'produto_id');
+    }
+
+    public function itemNfe()
+    {
+        return $this->belongsTo(ItemNfe::class, 'item_nfe_id');
+    }
+
+    public function itemNfce()
+    {
+        return $this->belongsTo(ItemNfce::class, 'item_nfce_id');
     }
 
     public function local()

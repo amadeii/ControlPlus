@@ -240,6 +240,15 @@ class ProdutoController extends Controller
     }
 
     public function codigoUnico(Request $request){
+        $localId = $request->filled('local_id') ? (int)$request->local_id : null;
+        $depositoId = $request->filled('deposito_id') ? (int)$request->deposito_id : null;
+        if ($depositoId) {
+            $localDeposito = Deposito::resolveLocalIdByDepositoId($depositoId);
+            if (!$localDeposito || ($localId && (int)$localDeposito !== $localId)) {
+                return response()->json([], 200);
+            }
+            $localId = (int)$localDeposito;
+        }
 
         $data = ProdutoUnico::
         where('produtos.empresa_id', $request->empresa_id)
@@ -255,11 +264,11 @@ class ProdutoController extends Controller
         ->when($request->pesquisa, function ($q) use ($request) {
             return $q->where('produto_unicos.codigo', 'LIKE', "%$request->pesquisa%");
         })
-        ->when($request->local_id, function ($q) use ($request) {
-            return $q->where(function ($sub) use ($request) {
-                return $sub->where('produto_unicos.local_id', $request->local_id)
-                    ->orWhereNull('produto_unicos.local_id');
-            });
+        ->when($localId, function ($q) use ($localId) {
+            return $q->where('produto_unicos.local_id', $localId);
+        })
+        ->when($depositoId, function ($q) use ($depositoId) {
+            return $q->where('produto_unicos.deposito_id', $depositoId);
         })
         ->get();
         return response()->json($data, 200);

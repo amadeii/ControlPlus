@@ -41,6 +41,13 @@
                     !!}
                 </div>
 
+                <div class="col-md-3">
+                    {!!Form::text('serial', 'Serial')
+                    ->attrs(['class' => 'form-control'])
+                    !!}
+                    <small class="text-muted">Obrigatorio apenas para produto serializado.</small>
+                </div>
+
                 @if(__countLocalAtivo() > 1)
                 <div class="col-md-3">
                     <label for="">Depósito</label>

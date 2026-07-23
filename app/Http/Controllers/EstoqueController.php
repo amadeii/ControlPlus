@@ -219,6 +219,33 @@ class EstoqueController extends Controller
         ]);
     }
 
+    private function serialEntradaDuplicado(int $produtoId, string $serial): bool
+    {
+        return ProdutoUnico::where('produto_id', $produtoId)
+            ->where('codigo', $serial)
+            ->where('tipo', 'entrada')
+            ->lockForUpdate()
+            ->exists();
+    }
+
+    private function serialDisponivelParaSaida(int $produtoId, string $serial, int $localId, ?int $depositoId): ProdutoUnico
+    {
+        $query = ProdutoUnico::where('produto_id', $produtoId)
+            ->where('codigo', $serial)
+            ->where('tipo', 'entrada')
+            ->where('em_estoque', 1)
+            ->where('status_key', StatusKeyUtil::DEFAULT_STATUS);
+
+        $query = $this->applyDepositoFiltro($query, $depositoId, $localId);
+
+        $produtoUnico = $query->lockForUpdate()->first();
+        if (!$produtoUnico) {
+            throw new \Exception('Serial inexistente, indisponivel, vendido, reservado ou de outro produto.');
+        }
+
+        return $produtoUnico;
+    }
+
     private function statusBaseOptions(): array
     {
         return [
@@ -1484,6 +1511,7 @@ class EstoqueController extends Controller
 
     public function store(Request $request)
     {
+        $transactionStarted = false;
         try {
             $empresa_id   = $this->getEmpresaIdAtual($request);
             $isTradein    = $request->filled('tradein_inventory_id');
@@ -1514,6 +1542,27 @@ class EstoqueController extends Controller
 
             $local_id    = $contexto['local_id'];
             $deposito_id = $contexto['deposito_id'];
+            $produto = \App\Models\Produto::where('empresa_id', $empresa_id)->findOrFail((int)$request->produto_id);
+
+            DB::beginTransaction();
+            $transactionStarted = true;
+
+            if ($produto->tipo_unico) {
+                if (QuantidadeUtil::toUnits($request->quantidade) !== QuantidadeUtil::FACTOR) {
+                    session()->flash("flash_error", "Produto serializado deve movimentar quantidade 1 por serial.");
+                    throw new \Exception("Produto serializado deve movimentar quantidade 1 por serial.");
+                }
+
+                if (!$serial) {
+                    session()->flash("flash_error", "Serial obrigatorio para produto serializado.");
+                    throw new \Exception("Serial obrigatorio para produto serializado.");
+                }
+
+                if ($this->serialEntradaDuplicado((int)$produto->id, $serial)) {
+                    session()->flash("flash_error", "Serial ja cadastrado para este produto.");
+                    throw new \Exception("Serial ja cadastrado para este produto.");
+                }
+            }
 
             // For tradein entries of serialized products, serial is mandatory.
             if ($isTradein) {
@@ -1536,7 +1585,7 @@ class EstoqueController extends Controller
                     ->find((int) $request->tradein_inventory_id);
                 if (!$tradeinInventoryItem) {
                     session()->flash("flash_error", "Item de Trade-in não encontrado para entrada em estoque.");
-                    return redirect()->back();
+                    throw new \Exception("Item de Trade-in nao encontrado para entrada em estoque.");
                 }
 
                 $tradeinValorAtual = \App\Models\Tradein::where('empresa_id', $empresa_id)
@@ -1553,7 +1602,7 @@ class EstoqueController extends Controller
                 $produto = \App\Models\Produto::find((int) $request->produto_id);
                 if ($produto && $produto->tipo_unico && empty($serial)) {
                     session()->flash("flash_error", "Serial obrigatório para produto serializado em entrada de Trade-in.");
-                    return redirect()->back();
+                    throw new \Exception("Serial obrigatorio para produto serializado em entrada de Trade-in.");
                 }
                 if ($produto && $tradeinValorAtual !== null) {
                     $produto->valor_compra = (float) $tradeinValorAtual;
@@ -1605,31 +1654,16 @@ class EstoqueController extends Controller
                 $serial
             );
 
-            // For serialized (tipo_unico) products in tradein flow, register the
-            // unique serial unit so it appears in stock management and movements.
-            if ($isTradein && $serial && isset($produto) && $produto && $produto->tipo_unico) {
-                $produtoUnico = ProdutoUnico::where('produto_id', $produto->id)
-                    ->where('codigo', $serial)
-                    ->first();
-
-                if ($produtoUnico) {
-                    $produtoUnico->deposito_id = $deposito_id;
-                    $produtoUnico->local_id = $local_id;
-                    $produtoUnico->tipo = 'entrada';
-                    $produtoUnico->em_estoque = 1;
-                    $produtoUnico->status_key = $statusOperacionalTradein;
-                    $produtoUnico->save();
-                } else {
-                    ProdutoUnico::create([
-                        'produto_id'  => $produto->id,
-                        'deposito_id' => $deposito_id,
-                        'local_id'    => $local_id,
-                        'codigo'      => $serial,
-                        'tipo'        => 'entrada',
-                        'em_estoque'  => 1,
-                        'status_key'  => $statusOperacionalTradein,
-                    ]);
-                }
+            if ($serial && isset($produto) && $produto && $produto->tipo_unico) {
+                ProdutoUnico::create([
+                    'produto_id'  => $produto->id,
+                    'deposito_id' => $deposito_id,
+                    'local_id'    => $local_id,
+                    'codigo'      => $serial,
+                    'tipo'        => 'entrada',
+                    'em_estoque'  => 1,
+                    'status_key'  => $isTradein ? $statusOperacionalTradein : StatusKeyUtil::DEFAULT_STATUS,
+                ]);
             }
 
             __createLog($empresa_id, 'Estoque', 'cadastrar', $transacao->produto->nome . " - quantidade " . $request->quantidade);
@@ -1641,8 +1675,14 @@ class EstoqueController extends Controller
                 }
             }
 
+            DB::commit();
+            $transactionStarted = false;
+
             session()->flash("flash_success", "Estoque adicionado com sucesso!");
         } catch (\Exception $e) {
+            if ($transactionStarted) {
+                DB::rollBack();
+            }
             __createLog($this->getEmpresaIdAtual($request), 'Estoque', 'erro', $e->getMessage());
             session()->flash("flash_error", "Algo deu errado: " . $e->getMessage());
         }
@@ -1966,8 +2006,10 @@ class EstoqueController extends Controller
     }
 
     public function retiradaStore(Request $request){
+        $transactionStarted = false;
         try{
             $empresa_id = $this->getEmpresaIdAtual($request);
+            $serial = $request->filled('serial') ? trim((string)$request->serial) : null;
             $countLocaisAtivos = Localizacao::where('empresa_id', $empresa_id)
                 ->where('status', 1)
                 ->count();
@@ -1988,6 +2030,7 @@ class EstoqueController extends Controller
 
             $local_id = $contexto['local_id'];
             $deposito_id = $contexto['deposito_id'];
+            $produto = \App\Models\Produto::where('empresa_id', $empresa_id)->findOrFail((int)$request->produto_id);
 
             // dd($request->all());
             $estoqueAtual = $this->findEstoqueByContext((int)$request->produto_id, $request->produto_variacao_id, $deposito_id, $local_id)
@@ -1999,12 +2042,30 @@ class EstoqueController extends Controller
                 return redirect()->back();
             }
 
-            if($estoqueAtual->quantidade < $request->quantidade){
+            if(QuantidadeUtil::toUnits($estoqueAtual->quantidade) < QuantidadeUtil::toUnits($request->quantidade)){
                 session()->flash("flash_error", "Estoque insuficiente!");
                 return redirect()->back();
             }
 
-            $retirada = RetiradaEstoque::create([
+            if ($produto->tipo_unico && !$serial) {
+                session()->flash("flash_error", "Serial obrigatorio para retirada de produto serializado.");
+                return redirect()->back()->withInput();
+            }
+
+            if ($produto->tipo_unico && QuantidadeUtil::toUnits($request->quantidade) !== QuantidadeUtil::FACTOR) {
+                session()->flash("flash_error", "Produto serializado deve movimentar quantidade 1 por serial.");
+                return redirect()->back()->withInput();
+            }
+
+            DB::beginTransaction();
+            $transactionStarted = true;
+
+            $produtoUnico = null;
+            if ($produto->tipo_unico) {
+                $produtoUnico = $this->serialDisponivelParaSaida((int)$produto->id, $serial, (int)$local_id, (int)$deposito_id);
+            }
+
+            RetiradaEstoque::create([
                 'motivo' => $request->motivo,
                 'observacao' => $request->observacao ?? '',
                 'produto_id' => $request->produto_id,
@@ -2016,6 +2077,24 @@ class EstoqueController extends Controller
 
             $this->util->reduzEstoque($request->produto_id, $request->quantidade, $request->produto_variacao_id, $local_id, $deposito_id);
 
+            if ($produtoUnico) {
+                $produtoUnico->em_estoque = 0;
+                $produtoUnico->save();
+
+                ProdutoUnico::create([
+                    'nfe_id' => null,
+                    'nfce_id' => null,
+                    'produto_id' => (int)$produto->id,
+                    'local_id' => $local_id,
+                    'deposito_id' => $deposito_id,
+                    'codigo' => $produtoUnico->codigo,
+                    'observacao' => $request->observacao ?? '',
+                    'tipo' => 'saida',
+                    'em_estoque' => 0,
+                    'status_key' => StatusKeyUtil::DEFAULT_STATUS,
+                ]);
+            }
+
             $transacao = $this->findEstoqueByContext((int)$request->produto_id, $request->produto_variacao_id, $deposito_id, $local_id)->first();
             if (!$transacao) {
                 throw new \Exception("Não foi possível localizar a transação de estoque.");
@@ -2024,10 +2103,16 @@ class EstoqueController extends Controller
             $codigo_transacao = $transacao->id;
             $tipo_transacao = 'alteracao_estoque';
 
-            $this->util->movimentacaoProduto($request->produto_id, $request->quantidade, $tipo, $codigo_transacao, $tipo_transacao, \Auth::user()->id, $request->produto_variacao_id, $local_id, $deposito_id);
+            $this->util->movimentacaoProduto($request->produto_id, $request->quantidade, $tipo, $codigo_transacao, $tipo_transacao, \Auth::user()->id, $request->produto_variacao_id, $local_id, $deposito_id, $serial);
+
+            DB::commit();
+            $transactionStarted = false;
 
             session()->flash("flash_success", "Estoque retirado com sucesso!");
         }catch (\Exception $e) {
+            if ($transactionStarted) {
+                DB::rollBack();
+            }
             session()->flash("flash_error", "Algo deu errado: " . $e->getMessage());
         }
         return redirect()->back();

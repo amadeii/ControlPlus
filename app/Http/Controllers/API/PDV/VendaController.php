@@ -104,7 +104,7 @@ class VendaController extends Controller
         }
     }
 
-    private function consumirSerialVenda(array $item, Produto $product, int $local_id, int $nfceId): void
+    private function consumirSerialVenda(array $item, Produto $product, int $local_id, int $nfceId, int $itemNfceId): void
     {
         $produtoUnicoId = $item['produto_unico_id'] ?? null;
         $codigoUnico = $item['codigo_unico'] ?? ($item['serial'] ?? null);
@@ -152,8 +152,10 @@ class VendaController extends Controller
         ProdutoUnico::create([
             'nfe_id' => null,
             'nfce_id' => $nfceId,
+            'item_nfce_id' => $itemNfceId,
             'produto_id' => (int)$product->id,
             'local_id' => (int)$serial->local_id,
+            'deposito_id' => $serial->deposito_id,
             'codigo' => $serial->codigo,
             'observacao' => '',
             'tipo' => 'saida',
@@ -489,7 +491,7 @@ class VendaController extends Controller
 
                     if ($product->gerenciar_estoque) {
                         if ((bool)$product->tipo_unico) {
-                            $this->consumirSerialVenda($item, $product, (int)$local_id, (int)$nfce->id);
+                            $this->consumirSerialVenda($item, $product, (int)$local_id, (int)$nfce->id, (int)$itemNfce->id);
                         }
                         $this->util->reduzEstoque($product->id, $item['quantidade'], $produtoVariacaoId, $local_id);
                     }
@@ -498,7 +500,7 @@ class VendaController extends Controller
                     $codigo_transacao = $nfce->id;
                     $tipo_transacao = 'venda_nfce';
 
-                    $this->util->movimentacaoProduto($product->id, $item['quantidade'], $tipo, $codigo_transacao, $tipo_transacao, $request->usuario_id, $produtoVariacaoId);
+                    $this->util->movimentacaoProduto($product->id, $item['quantidade'], $tipo, $codigo_transacao, $tipo_transacao, $request->usuario_id, $produtoVariacaoId, $local_id, null, $item['codigo_unico'] ?? ($item['serial'] ?? null));
 
                 }
 

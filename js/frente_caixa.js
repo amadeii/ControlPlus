@@ -917,11 +917,14 @@ function initCodigoUnicoSelect($select) {
             url: path_url + "api/produtos/codigo-unico",
             dataType: "json",
             data: function (params) {
+                var depositoId = $("#deposito_id").val() || $("#inp-deposito_id").val() || "";
                 return {
                     pesquisa: params.term || "", // ✅ vazio = lista tudo
                     page: params.page || 1, // ✅ paginação
                     empresa_id: $("#empresa_id").val(),
                     produto_id: modalCodigoUnicoProdutoId,
+                    local_id: $("#local_id").val(),
+                    deposito_id: depositoId,
                 };
             },
             processResults: function (response, params) {

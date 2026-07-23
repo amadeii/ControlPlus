@@ -74,6 +74,7 @@ class FrontBoxController extends Controller
     protected $utilWhatsApp;
     protected $filaEnvioUtil;
     protected $tradeinCreditUtil;
+    protected ?int $depositoSerialConsumidoId = null;
 
     public function __construct(EstoqueUtil $util, WhatsAppUtil $utilWhatsApp, FilaEnvioUtil $filaEnvioUtil, TradeinCreditUtil $tradeinCreditUtil)
     {
@@ -1152,6 +1153,8 @@ class FrontBoxController extends Controller
 
     private function processaCodigoUnicoSaida($produtoId, $quantidade, $jsonCodigos, $nfceId, ItemNfce $itemNfce, ?int $localId = null): int
     {
+        $this->depositoSerialConsumidoId = null;
+
         if(!$jsonCodigos){
             throw new \Exception('Selecione os códigos únicos para o produto informado.');
         }
@@ -1178,6 +1181,7 @@ class FrontBoxController extends Controller
                 $entrada = ProdutoUnico::where('id', $code['id'])
                     ->where('produto_id', $produtoId)
                     ->where('tipo', 'entrada')
+                    ->lockForUpdate()
                     ->first();
             }
 
@@ -1186,6 +1190,7 @@ class FrontBoxController extends Controller
                 $entrada = ProdutoUnico::where('produto_id', $produtoId)
                 ->where('codigo', $codigoTexto)
                 ->where('tipo', 'entrada')
+                ->lockForUpdate()
                 ->first();
             }
 
@@ -1205,6 +1210,7 @@ class FrontBoxController extends Controller
             $localEfetivoSerial = $this->resolveLocalEfetivoParaSerial($localId ? (int)$localId : null, $entrada);
             if ($localEfetivoOperacao === null) {
                 $localEfetivoOperacao = $localEfetivoSerial;
+                $this->depositoSerialConsumidoId = $entrada->deposito_id ? (int)$entrada->deposito_id : null;
             } elseif ((int)$localEfetivoOperacao !== (int)$localEfetivoSerial) {
                 throw new \Exception('Selecione códigos únicos do mesmo local para concluir a venda.');
             }
@@ -1220,8 +1226,10 @@ class FrontBoxController extends Controller
             ProdutoUnico::create([
                 'nfe_id' => null,
                 'nfce_id' => $nfceId,
+                'item_nfce_id' => $itemNfce->id,
                 'produto_id' => $produtoId,
                 'local_id' => $entrada->local_id,
+                'deposito_id' => $entrada->deposito_id,
                 'codigo' => $entrada->codigo,
                 'observacao' => $code['observacao'] ?? '',
                 'tipo' => 'saida',
@@ -1438,7 +1446,7 @@ class FrontBoxController extends Controller
                             $codigo_transacao = $nfce->id;
                             $tipo_transacao = 'venda_nfce';
 
-                            $this->util->movimentacaoProduto($product->id, __convert_value_bd($request->quantidade[$i]), $tipo, $codigo_transacao, $tipo_transacao, $request->usuario_id, $variacao_id);
+                            $this->util->movimentacaoProduto($product->id, __convert_value_bd($request->quantidade[$i]), $tipo, $codigo_transacao, $tipo_transacao, $request->usuario_id, $variacao_id, $localMovimentoItem, $this->depositoSerialConsumidoId, $itemNfce->infAdProd ?: null);
                         }
 
                         if($product->prazo_garantia > 0 && $nfce->cliente_id != null){
@@ -2945,7 +2953,7 @@ public function update(Request $request, $id){
                     $codigo_transacao = $item->id;
                     $tipo_transacao = 'venda_nfce';
 
-                    $this->util->movimentacaoProduto($product->id, __convert_value_bd($request->quantidade[$i]), $tipo, $codigo_transacao, $tipo_transacao, $request->usuario_id);
+                    $this->util->movimentacaoProduto($product->id, __convert_value_bd($request->quantidade[$i]), $tipo, $codigo_transacao, $tipo_transacao, $request->usuario_id, null, $localMovimentoItem, $this->depositoSerialConsumidoId, $itemNfce->infAdProd ?: null);
                 }
             }
 

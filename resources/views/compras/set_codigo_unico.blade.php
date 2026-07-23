@@ -25,6 +25,7 @@
                                 @forelse($produtos as $item)
                                 <tr>
                                     <td>
+                                        <input type="hidden" name="item_nfe_id[]" value="{{ $item->id }}">
                                         <input type="hidden" name="produto_id[]" value="{{ $item->produto->id }}">
                                         <input class="form-control" readonly type="text" name="produto_nome[]" value="{{ $item->produto->nome }}">
                                     </td>
@@ -62,5 +63,3 @@
     });
 </script>
 @endsection
-
-    
