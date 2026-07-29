@@ -1093,6 +1093,10 @@ function getQuantidadePadraoPdv(defaultValue) {
     return fallback;
 }
 
+function isProdutoExistenteAgrupavel($row) {
+    return !isProdutoRowTipoUnico($row);
+}
+
 function addProdutos(id) {
     let qtd = 1;
     let agrupar_itens = $("#agrupar_itens").val();
@@ -1150,7 +1154,10 @@ function addProdutos(id) {
                     let idDup = 0;
                     if (agrupar_itens == 1) {
                         $(".produto_row").each(function () {
-                            if ($(this).val() == id) {
+                            if (
+                                $(this).val() == id &&
+                                isProdutoExistenteAgrupavel($(this).closest("tr"))
+                            ) {
                                 idDup = $(this).val();
                             }
                         });
@@ -1233,7 +1240,10 @@ $(".btn-add-item").click(() => {
                 let agrupar_itens = $("#agrupar_itens").val();
                 if (!variacao_id && agrupar_itens == 1) {
                     $(".produto_row").each(function () {
-                        if ($(this).val() == product_id) {
+                        if (
+                            $(this).val() == product_id &&
+                            isProdutoExistenteAgrupavel($(this).closest("tr"))
+                        ) {
                             idDup = product_id;
                         }
                     });

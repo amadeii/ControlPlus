@@ -1111,6 +1111,28 @@ class FrontBoxController extends Controller
         }
 
         $localSerial = $entrada->local_id ? (int)$entrada->local_id : null;
+        if ($entrada->deposito_id) {
+            $depositoSerial = \App\Models\Deposito::select('id', 'local_id', 'empresa_id')
+                ->find((int)$entrada->deposito_id);
+
+            if (!$depositoSerial) {
+                throw new \Exception("O cÃ³digo {$entrada->codigo} estÃ¡ vinculado a depÃ³sito invÃ¡lido.");
+            }
+
+            if ($empresaId && (int)$depositoSerial->empresa_id !== $empresaId) {
+                throw new \Exception("O cÃ³digo {$entrada->codigo} pertence a depÃ³sito de outra empresa.");
+            }
+
+            $localDepositoSerial = $depositoSerial->local_id ? (int)$depositoSerial->local_id : null;
+            if ($localSerial && $localDepositoSerial && $localSerial !== $localDepositoSerial) {
+                throw new \Exception("O cÃ³digo {$entrada->codigo} possui depÃ³sito incompatÃ­vel com o local do serial.");
+            }
+
+            if (!$localSerial && $localDepositoSerial) {
+                $localSerial = $localDepositoSerial;
+            }
+        }
+
         $localSerialValido = $validaLocalEmpresa($localSerial);
         if ($localSerial && !$localSerialValido) {
             throw new \Exception("O código {$entrada->codigo} está vinculado a local inválido para a empresa.");
@@ -1375,6 +1397,7 @@ class FrontBoxController extends Controller
                 $codigoInputs = $request->codigo_unico_ids ?? [];
                 if($request->produto_id){
                     for ($i = 0; $i < sizeof($request->produto_id); $i++) {
+                        $this->depositoSerialConsumidoId = null;
                         $product = Produto::findOrFail($request->produto_id[$i]);
                         $product = __tributacaoProdutoLocalVenda($product, $caixa->local_id);
                         $variacao_id = isset($request->variacao_id[$i]) ? $request->variacao_id[$i] : null;
@@ -1750,7 +1773,7 @@ return response()->json($nfce, 200);
         'produto_ids' => $request->produto_id ?? [],
     ]);
     __createLog($request->empresa_id, 'PDV', 'erro', $e->getMessage());
-    return response()->json($e->getMessage() . ", line: " . $e->getLine() . ", file: " . $e->getFile(), 401);
+    return response()->json(['message' => $e->getMessage()], 422);
 }
 }
 
@@ -2615,6 +2638,7 @@ public function storeNfe(Request $request)
             $codigoInputs = $request->codigo_unico_ids ?? [];
             if($request->produto_id){
                 for ($i = 0; $i < sizeof($request->produto_id); $i++) {
+                    $this->depositoSerialConsumidoId = null;
                     $product = Produto::findOrFail($request->produto_id[$i]);
                     $this->bloquearProdutoSerialEmFluxoLegado($product);
                     $product = __tributacaoProdutoLocalVenda($product, $caixa->local_id);

@@ -60,6 +60,8 @@ class SuperstoreSerialRegressionTest extends TestCase
         $this->assertStringContainsString("where('produto_unicos.tipo', 'entrada')", $controller);
         $this->assertStringContainsString("where('produto_unicos.em_estoque', 1)", $controller);
         $this->assertStringContainsString("where('produto_unicos.status_key', StatusKeyUtil::DEFAULT_STATUS)", $controller);
+        $this->assertStringContainsString("orWhereNull('produto_unicos.status_key')", $controller);
+        $this->assertStringContainsString("orWhere('produto_unicos.status_key', '')", $controller);
         $this->assertStringContainsString("where('produto_unicos.produto_id', \$request->produto_id)", $controller);
         $this->assertStringContainsString("where('produto_unicos.local_id', \$localId)", $controller);
         $this->assertStringContainsString("where('produto_unicos.deposito_id', \$depositoId)", $controller);
@@ -79,6 +81,19 @@ class SuperstoreSerialRegressionTest extends TestCase
             $this->assertMatchesRegularExpression("/'tipo'\s*=>\s*'saida'/", $controller);
             $this->assertMatchesRegularExpression("/'em_estoque'\s*=>\s*0/", $controller);
             $this->assertStringContainsString("StatusKeyUtil::DEFAULT_STATUS", $controller);
+        }
+
+        $this->assertStringContainsString('$this->depositoSerialConsumidoId = null;', $webController);
+        $this->assertStringContainsString('possui depÃ³sito incompatÃ­vel com o local do serial', $webController);
+        $this->assertStringContainsString('pertence a depÃ³sito de outra empresa', $webController);
+        $this->assertStringContainsString("return response()->json(['message' => \$e->getMessage()], 422);", $webController);
+
+        $publicJs = file_get_contents(public_path('js/frente_caixa.js'));
+        $sourceJs = file_get_contents(base_path('js/frente_caixa.js'));
+        foreach ([$publicJs, $sourceJs] as $js) {
+            $this->assertStringContainsString('function isProdutoExistenteAgrupavel($row)', $js);
+            $this->assertStringContainsString('return !isProdutoRowTipoUnico($row);', $js);
+            $this->assertStringContainsString('isProdutoExistenteAgrupavel($(this).closest("tr"))', $js);
         }
 
         $this->assertStringContainsString('->where(\'em_estoque\', 1)', $apiController);

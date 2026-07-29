@@ -254,7 +254,11 @@ class ProdutoController extends Controller
         where('produtos.empresa_id', $request->empresa_id)
         ->where('produto_unicos.tipo', 'entrada')
         ->where('produto_unicos.em_estoque', 1)
-        ->where('produto_unicos.status_key', StatusKeyUtil::DEFAULT_STATUS)
+        ->where(function ($q) {
+            $q->where('produto_unicos.status_key', StatusKeyUtil::DEFAULT_STATUS)
+                ->orWhereNull('produto_unicos.status_key')
+                ->orWhere('produto_unicos.status_key', '');
+        })
         ->where('produtos.status', 1)
         ->select('produto_unicos.*')
         ->join('produtos', 'produtos.id', '=', 'produto_unicos.produto_id')
