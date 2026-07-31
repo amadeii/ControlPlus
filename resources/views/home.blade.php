@@ -30,6 +30,7 @@
                         </div>
                         <div class="card-body">
                             <h3>Painel</h3>
+                            @include('home._dashboard')
 
                             @if (in_array('Cards de receita', $homeComponentes) || $configGeral == null)
                                 <div class="row g-3 align-items-stretch mt-2">
@@ -681,6 +682,7 @@
     <div class="card">
         <div class="card-body">
             <h3>Painel</h3>
+            @include('home._dashboard')
 
             <h5>Olá, <strong class="text-success">{{ get_name_user() }}</strong> seja bem vindo!</h5>
 

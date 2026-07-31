@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\ContratoEmpresa;
 use App\Models\ContratoConfig;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class HomeController extends Controller
 {
@@ -212,12 +214,219 @@ class HomeController extends Controller
 
         $melhoresClientes = $this->melhoresClientes();
 
+        $dashboard = $this->dashboardData(request()->empresa_id, $this->dashboardLocalId());
+
         return view('home', 
             compact('empresa', 'totalEmitidoMes', 'totalNfeCount', 'totalNfceCount', 'msgPlano', 'totalCteCount', 
                 'totalMdfeCount', 'totalVendasMes', 'mes', 'somaVendasMesesAnteriores', 'totalComprasMes',
                 'somaComprasMesesAnteriores', 'botaoContrato', 'homeComponentes', 'configGeral', 'emPromocao', 'somaMensal',
                 'somaSemanal', 'custoMensal', 'totalEmEstoque', 'totalDeVendaSemana', 'inicioSemana', 'produtosMaisVendidosMensal',
-                'caixas', 'melhoresClientes'));
+                'caixas', 'melhoresClientes', 'dashboard'));
+    }
+
+    private function dashboardData($empresaId, $localId = null)
+    {
+        $summary = $this->dashboardSafe(function () use ($empresaId, $localId) {
+            $totalNfe = Nfe::where('empresa_id', $empresaId)
+            ->when($localId, function ($query) use ($localId) {
+                return $query->where('local_id', $localId);
+            })
+            ->where('tpNF', 1)
+            ->where('estado', '!=', 'cancelado')
+            ->sum('total');
+
+            $totalNfce = Nfce::where('empresa_id', $empresaId)
+            ->when($localId, function ($query) use ($localId) {
+                return $query->where('local_id', $localId);
+            })
+            ->where('estado', '!=', 'cancelado')
+            ->sum('total');
+
+            $totalPedidos = DB::table('pedidos')->where('empresa_id', $empresaId)->count()
+            + DB::table('pedido_deliveries')->where('empresa_id', $empresaId)->count()
+            + DB::table('pedido_ecommerces')->where('empresa_id', $empresaId)->count()
+            + DB::table('pedido_mercado_livres')->where('empresa_id', $empresaId)->count();
+
+            return [
+                'total_vendas' => $totalNfe + $totalNfce,
+                'total_pedidos' => $totalPedidos,
+                'total_clientes' => DB::table('clientes')->where('empresa_id', $empresaId)->count(),
+                'total_produtos' => DB::table('produtos')->where('empresa_id', $empresaId)->count(),
+            ];
+        }, [
+            'total_vendas' => 0,
+            'total_pedidos' => 0,
+            'total_clientes' => 0,
+            'total_produtos' => 0,
+        ], 'summary');
+
+        return [
+            'summary' => $summary,
+            'recentSales' => $this->recentDashboardSales($empresaId, $localId),
+            'recentOrders' => $this->recentDashboardOrders($empresaId),
+            'lowStockProducts' => $this->lowStockDashboardProducts($empresaId, $localId),
+            'hasFallback' => false,
+        ];
+    }
+
+    private function recentDashboardSales($empresaId, $localId = null)
+    {
+        return $this->dashboardSafe(function () use ($empresaId, $localId) {
+            $nfe = Nfe::with('cliente')
+            ->where('empresa_id', $empresaId)
+            ->when($localId, function ($query) use ($localId) {
+                return $query->where('local_id', $localId);
+            })
+            ->where('tpNF', 1)
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'tipo' => 'NFe',
+                    'numero' => $item->numero_sequencial ?? $item->numero ?? $item->id,
+                    'cliente' => optional($item->cliente)->razao_social ?: 'Consumidor nao informado',
+                    'total' => $item->total ?? 0,
+                    'estado' => $item->estado ?? '-',
+                    'created_at' => $item->created_at,
+                    'url' => route('vendas.index'),
+                ];
+            });
+
+            $nfce = Nfce::with('cliente')
+            ->where('empresa_id', $empresaId)
+            ->when($localId, function ($query) use ($localId) {
+                return $query->where('local_id', $localId);
+            })
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'tipo' => 'NFCe',
+                    'numero' => $item->numero_sequencial ?? $item->numero ?? $item->id,
+                    'cliente' => optional($item->cliente)->razao_social ?: ($item->cliente_nome ?: 'Consumidor nao informado'),
+                    'total' => $item->total ?? 0,
+                    'estado' => $item->estado ?? '-',
+                    'created_at' => $item->created_at,
+                    'url' => route('vendas.index'),
+                ];
+            });
+
+            return $nfe->concat($nfce)->sortByDesc('created_at')->take(6)->values();
+        }, collect(), 'recent_sales');
+    }
+
+    private function recentDashboardOrders($empresaId)
+    {
+        return $this->dashboardSafe(function () use ($empresaId) {
+            $orders = collect();
+
+            $orders = $orders->concat(DB::table('pedidos')
+            ->where('empresa_id', $empresaId)
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'origem' => 'Cardapio',
+                    'numero' => $item->comanda ?: $item->id,
+                    'cliente' => $item->cliente_nome ?: 'Cliente nao informado',
+                    'total' => $item->total ?? 0,
+                    'estado' => $item->status ? 'ativo' : 'fechado',
+                    'created_at' => $item->created_at,
+                    'url' => route('pedidos-cardapio.index'),
+                ];
+            }));
+
+            $orders = $orders->concat(DB::table('pedido_deliveries')
+            ->where('empresa_id', $empresaId)
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'origem' => 'Delivery',
+                    'numero' => $item->numero_sequencial ?: $item->id,
+                    'cliente' => $item->telefone ?: 'Cliente nao informado',
+                    'total' => $item->valor_total ?? 0,
+                    'estado' => $item->estado ?? '-',
+                    'created_at' => $item->created_at,
+                    'url' => route('pedidos-delivery.index'),
+                ];
+            }));
+
+            $orders = $orders->concat(DB::table('pedido_ecommerces')
+            ->where('empresa_id', $empresaId)
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'origem' => 'E-commerce',
+                    'numero' => $item->hash_pedido ?: $item->id,
+                    'cliente' => trim(($item->nome ?? '') . ' ' . ($item->sobre_nome ?? '')) ?: ($item->email ?: 'Cliente nao informado'),
+                    'total' => $item->valor_total ?? 0,
+                    'estado' => $item->estado ?? '-',
+                    'created_at' => $item->created_at,
+                    'url' => route('pedidos-ecommerce.index'),
+                ];
+            }));
+
+            return $orders->sortByDesc('created_at')->take(6)->values();
+        }, collect(), 'recent_orders');
+    }
+
+    private function lowStockDashboardProducts($empresaId, $localId = null)
+    {
+        return $this->dashboardSafe(function () use ($empresaId, $localId) {
+            return DB::table('produtos')
+            ->leftJoin('estoques', function ($join) use ($localId) {
+                $join->on('estoques.produto_id', '=', 'produtos.id');
+                if ($localId) {
+                    $join->where('estoques.local_id', $localId);
+                }
+            })
+            ->where('produtos.empresa_id', $empresaId)
+            ->where('produtos.gerenciar_estoque', 1)
+            ->select(
+                'produtos.id',
+                'produtos.nome',
+                'produtos.unidade',
+                'produtos.estoque_minimo',
+                DB::raw('COALESCE(SUM(estoques.quantidade), 0) as quantidade')
+            )
+            ->groupBy('produtos.id', 'produtos.nome', 'produtos.unidade', 'produtos.estoque_minimo')
+            ->havingRaw('COALESCE(SUM(estoques.quantidade), 0) <= COALESCE(produtos.estoque_minimo, 0)')
+            ->orderBy('quantidade')
+            ->limit(6)
+            ->get();
+        }, collect(), 'low_stock');
+    }
+
+    private function dashboardLocalId()
+    {
+        try {
+            $local = __getLocalAtivo();
+            return $local ? $local->id : null;
+        } catch (Throwable $e) {
+            return null;
+        }
+    }
+
+    private function dashboardSafe(callable $callback, $fallback, $context)
+    {
+        try {
+            return $callback();
+        } catch (Throwable $e) {
+            Log::warning('HOME_DASHBOARD_FALLBACK', [
+                'context' => $context,
+                'empresa_id' => request()->empresa_id,
+                'message' => $e->getMessage(),
+            ]);
+
+            return $fallback;
+        }
     }
 
     private function melhoresClientes(){
