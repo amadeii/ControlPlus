@@ -95,10 +95,13 @@ class Permission extends \Spatie\Permission\Models\Permission
             // VENDAS E PDV
             array('name' => 'pdv_view', 'description' => 'Visualiza PDV'),
             array('name' => 'pdv_create', 'description' => 'Cria PDV'),
+            array('name' => 'pdv_edit', 'description' => 'Edita PDV'),
             array('name' => 'orcamento_view', 'description' => 'Visualiza Orçamento'),
             array('name' => 'orcamento_create', 'description' => 'Cria Orçamento'),
             array('name' => 'pre_venda_view', 'description' => 'Visualiza pré venda'),
             array('name' => 'tradein_view', 'description' => 'Visualiza Trade-in'),
+            array('name' => 'tradein_edit', 'description' => 'Edita Trade-in'),
+            array('name' => 'tradein_delete', 'description' => 'Remove Trade-in'),
             array('name' => 'troca_view', 'description' => 'Visualiza troca'),
             array('name' => 'troca_create', 'description' => 'Cria troca'),
             array('name' => 'troca_delete', 'description' => 'Deleta troca'),

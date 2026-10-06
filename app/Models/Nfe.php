@@ -21,8 +21,11 @@ class Nfe extends Model
         'data_emissao_saida', 'data_emissao_retroativa', 'bandeira_cartao', 'cnpj_cartao', 'cAut_cartao', 'tipo_pagamento',
         'numero_sequencial', 'crt', 'local_id', 'deposito_id', 'user_id', 'data_entrega', 'funcionario_id',
         'nome_entrega', 'documento_entrega', 'rua_entrega', 'numero_entrega', 'bairro_entrega', 'cep_entrega', 'complemento_entrega',
-        'cidade_id_entrega', 'marca'
+        'cidade_id_entrega', 'marca', 'serial_status'
     ];
+
+    public const SERIAL_STATUS_CONCLUIDO = 'concluido';
+    public const SERIAL_STATUS_PENDENTE = 'pendente';
 
     public function getInfoAttribute()
     {
@@ -154,6 +157,68 @@ class Nfe extends Model
     public function produtoUnicos()
     {
         return $this->hasMany(ProdutoUnico::class, 'nfe_id');
+    }
+
+    public static function serialStatusLabels(): array
+    {
+        return [
+            self::SERIAL_STATUS_CONCLUIDO => 'Concluido',
+            self::SERIAL_STATUS_PENDENTE => 'Pendente de seriais',
+        ];
+    }
+
+    public function quantidadeSeriaisEntradaEsperada(): int
+    {
+        if ((int)$this->tpNF !== 0) {
+            return 0;
+        }
+
+        $itens = $this->relationLoaded('itens') ? $this->itens : $this->itens()->with('produto')->get();
+        return $itens->reduce(function (int $total, ItemNfe $item) {
+            if (!$item->produto || !(bool)$item->produto->tipo_unico) {
+                return $total;
+            }
+
+            $quantidade = (int)round((float)$item->quantidade);
+            return $total + max(1, $quantidade);
+        }, 0);
+    }
+
+    public function quantidadeSeriaisEntradaCadastrada(): int
+    {
+        if (!$this->id) {
+            return 0;
+        }
+
+        return $this->produtoUnicos()
+            ->where('tipo', 'entrada')
+            ->whereNotNull('item_nfe_id')
+            ->count();
+    }
+
+    public function serialEntradaPendente(): bool
+    {
+        $esperado = $this->quantidadeSeriaisEntradaEsperada();
+        if ($esperado === 0) {
+            return false;
+        }
+
+        return $this->serial_status === self::SERIAL_STATUS_PENDENTE
+            || $this->quantidadeSeriaisEntradaCadastrada() < $esperado;
+    }
+
+    public function syncSerialStatus(bool $save = true): string
+    {
+        $status = $this->quantidadeSeriaisEntradaCadastrada() < $this->quantidadeSeriaisEntradaEsperada()
+            ? self::SERIAL_STATUS_PENDENTE
+            : self::SERIAL_STATUS_CONCLUIDO;
+
+        $this->serial_status = $status;
+        if ($save && $this->exists && $this->isDirty('serial_status')) {
+            $this->save();
+        }
+
+        return $status;
     }
 
     public function fatura()

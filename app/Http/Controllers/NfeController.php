@@ -240,7 +240,9 @@ class NfeController extends Controller
         }
         $transportadoras = Transportadora::where('empresa_id', request()->empresa_id)->get();
         $cidades = Cidade::all();
-        $naturezas = NaturezaOperacao::where('empresa_id', request()->empresa_id)->get();
+        $naturezas = NaturezaOperacao::where('empresa_id', request()->empresa_id)
+            ->saida()
+            ->get();
         if (sizeof($naturezas) == 0) {
             session()->flash("flash_warning", "Primeiro cadastre um natureza de operação!");
             return redirect()->route('natureza-operacao.create');
@@ -256,6 +258,7 @@ class NfeController extends Controller
         }
 
         $naturezaPadrao = NaturezaOperacao::where('empresa_id', request()->empresa_id)
+        ->saida()
         ->where('padrao', 1)->first();
 
         $config = ConfigGeral::where('empresa_id', request()->empresa_id)->first();
@@ -287,7 +290,12 @@ class NfeController extends Controller
         __validaObjetoEmpresa($item);
         $transportadoras = Transportadora::where('empresa_id', request()->empresa_id)->get();
         $cidades = Cidade::all();
-        $naturezas = NaturezaOperacao::where('empresa_id', request()->empresa_id)->get();
+        $naturezas = NaturezaOperacao::where('empresa_id', request()->empresa_id)
+            ->where(function ($query) use ($item) {
+                $query->saida()
+                    ->orWhere('id', $item->natureza_id);
+            })
+            ->get();
         $caixa = __isCaixaAberto();
         $funcionarios = Funcionario::cargosComerciais()
         ->where('empresa_id', request()->empresa_id)
@@ -307,7 +315,9 @@ class NfeController extends Controller
         __validaObjetoEmpresa($item);
         $transportadoras = Transportadora::where('empresa_id', request()->empresa_id)->get();
         $cidades = Cidade::all();
-        $naturezas = NaturezaOperacao::where('empresa_id', request()->empresa_id)->get();
+        $naturezas = NaturezaOperacao::where('empresa_id', request()->empresa_id)
+            ->saida()
+            ->get();
         $caixa = __isCaixaAberto();
         $funcionarios = Funcionario::cargosComerciais()
         ->where('empresa_id', request()->empresa_id)
@@ -525,6 +535,17 @@ class NfeController extends Controller
                 return redirect()->back();
             }
             $nfe = DB::transaction(function () use ($request) {
+                $naturezaQuery = NaturezaOperacao::where('empresa_id', $request->empresa_id)
+                    ->where('id', $request->natureza_id);
+                if (isset($request->is_compra)) {
+                    $naturezaQuery->entrada();
+                } else {
+                    $naturezaQuery->saida();
+                }
+                if (!$naturezaQuery->exists()) {
+                    throw new \Exception('Natureza de operação incompatível com o tipo da nota.');
+                }
+
                 $cliente_id = isset($request->cliente_id) ? $request->cliente_id : null;
                 $fornecedor_id = isset($request->fornecedor_id) ? $request->fornecedor_id : null;
                 $empresa = Empresa::findOrFail($request->empresa_id);
@@ -740,7 +761,8 @@ class NfeController extends Controller
                         ]);
                     }
 
-                    if ($product->gerenciar_estoque && $request->orcamento == 0 && $nfe->natureza->movimentar_estoque == 1) {
+                    $compraSerialPendente = isset($request->is_compra) && (bool)$product->tipo_unico;
+                    if ($product->gerenciar_estoque && !$compraSerialPendente && $request->orcamento == 0 && $nfe->natureza->movimentar_estoque == 1) {
                         if (isset($request->is_compra)) {
 
                             $this->util->incrementaEstoque($product->id, __convert_value_bd($request->quantidade[$i]), 
@@ -751,7 +773,7 @@ class NfeController extends Controller
                         }
                     }
 
-                    if($request->orcamento == 0 && $product->gerenciar_estoque && $nfe->natureza->movimentar_estoque == 1){
+                    if($request->orcamento == 0 && $product->gerenciar_estoque && !$compraSerialPendente && $nfe->natureza->movimentar_estoque == 1){
                         if ($request->is_compra) {
 
                             $tipo = 'incremento';
@@ -766,6 +788,8 @@ class NfeController extends Controller
                         }
                     }
                 }
+
+                $nfe->syncSerialStatus();
 
                 if($request->tipo_pagamento){
                     if ($request->tipo_pagamento[0] != '' && $request->valor_fatura[0] != '') {
@@ -948,14 +972,14 @@ if (isset($request->is_compra)) {
     __createLog($request->empresa_id, 'Compra', 'cadastrar', $descricaoLog);
     session()->flash("flash_success", "Compra cadastrada!");
     if($nfe){
-        if ($nfe->isItemValidade()) {
-            return redirect()->route('compras.info-validade', $nfe->id);
-        }
-
         foreach($nfe->itens as $i){
             if($i->produto->tipo_unico){
                 return redirect()->route('compras.set-codigo-unico', $nfe->id);
             }
+        }
+
+        if ($nfe->isItemValidade()) {
+            return redirect()->route('compras.info-validade', $nfe->id);
         }
     }
     return redirect()->route('compras.index');
@@ -1158,6 +1182,18 @@ public function update(Request $request, $id)
 
         DB::transaction(function () use ($request, $id) {
             $item = Nfe::findOrFail($id);
+            $naturezaId = $request->natureza_id ?: $item->natureza_id;
+            $naturezaQuery = NaturezaOperacao::where('empresa_id', $item->empresa_id)
+                ->where('id', $naturezaId);
+            if ((int)$item->tpNF === 0) {
+                $naturezaQuery->entrada();
+            } else {
+                $naturezaQuery->saida();
+            }
+            if (!$naturezaQuery->exists()) {
+                throw new \Exception('Natureza de operação incompatível com o tipo da nota.');
+            }
+
             $localIdAnterior = $item->local_id ? (int)$item->local_id : null;
             $depositoIdAnterior = $item->deposito_id ? (int)$item->deposito_id : null;
             $transportadora_id = $request->transportadora_id;
@@ -1501,6 +1537,10 @@ public function destroy($id)
 public function xmlTemp($id)
 {
     $item = Nfe::findOrFail($id);
+    if ($item->serialEntradaPendente()) {
+        session()->flash("flash_error", "Informe todos os seriais da compra antes de gerar o XML.");
+        return redirect()->route('compras.set-codigo-unico', $item->id);
+    }
 
     $empresa = $item->empresa;
     $empresa = __objetoParaEmissao($empresa, $item->local_id);
@@ -2143,6 +2183,7 @@ private function insereNatureza($descricao){
     $data = [
         'descricao' => $descricao,
         'empresa_id' => request()->empresa_id,
+        'tipo_operacao' => 'saida',
     ];
     return NaturezaOperacao::create($data);
 }

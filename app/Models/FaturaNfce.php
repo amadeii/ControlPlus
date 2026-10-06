@@ -10,7 +10,8 @@ class FaturaNfce extends Model
     use HasFactory;
 
     protected $fillable = [ 
-        'nfce_id', 'tipo_pagamento', 'data_vencimento', 'valor', 'observacao'
+        'nfce_id', 'tipo_pagamento', 'data_vencimento', 'valor', 'observacao',
+        'parcela_numero', 'total_parcelas', 'bandeira_cartao', 'cnpj_cartao', 'cAut_cartao'
     ];
 
 

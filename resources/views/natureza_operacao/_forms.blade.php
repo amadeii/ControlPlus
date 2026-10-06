@@ -6,6 +6,12 @@
     </div>
 
     <div class="col-md-2">
+        {!!Form::select('tipo_operacao', 'Tipo de Operação', App\Models\NaturezaOperacao::tiposOperacao())
+        ->required()
+        ->attrs(['class' => 'form-select'])
+        !!}
+    </div>
+    <div class="col-md-2">
         {!!Form::select('padrao', 'Padrão', [0 => 'Não', 1 => 'Sim'])
         ->required()
         ->attrs(['class' => 'form-select'])

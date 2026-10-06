@@ -18,7 +18,7 @@ class SuperstoreSerialRegressionTest extends TestCase
         $this->assertStringContainsString("'item_nfe_id' => \$itemCompra->id", $controller);
         $this->assertStringContainsString("'deposito_id' => \$depositoId", $controller);
         $this->assertStringContainsString('Serial {$codigo} duplicado nesta compra.', $controller);
-        $this->assertStringContainsString('Serial {$codigo} jÃ¡ cadastrado para este produto.', $controller);
+        $this->assertStringContainsString('Serial {$codigo} já cadastrado para este produto.', $controller);
         $this->assertStringContainsString("'item_nfe_id'", $model);
     }
 
@@ -29,6 +29,45 @@ class SuperstoreSerialRegressionTest extends TestCase
         $this->assertStringContainsString('$this->util->incrementaEstoque($product->id, __convert_value_bd($request->quantidade[$i]),', $controller);
         $this->assertStringContainsString("\$tipo_transacao = 'compra';", $controller);
         $this->assertSame(1, substr_count($controller, "\$tipo_transacao = 'compra';"));
+    }
+
+    public function test_serialized_purchase_stays_pending_until_all_serials_are_registered(): void
+    {
+        $model = file_get_contents(app_path('Models/Nfe.php'));
+        $compraController = file_get_contents(app_path('Http/Controllers/CompraController.php'));
+        $nfeController = file_get_contents(app_path('Http/Controllers/NfeController.php'));
+        $migration = file_get_contents(database_path('migrations/2026_10_06_000003_add_serial_status_to_nves_table.php'));
+        $tableMigration = file_get_contents(database_path('migrations/2026_01_22_110521_create_nves_table.php'));
+        $index = file_get_contents(resource_path('views/compras/index.blade.php'));
+
+        $this->assertStringContainsString('SERIAL_STATUS_PENDENTE', $model);
+        $this->assertStringContainsString('quantidadeSeriaisEntradaEsperada', $model);
+        $this->assertStringContainsString('quantidadeSeriaisEntradaCadastrada', $model);
+        $this->assertStringContainsString('serialEntradaPendente', $model);
+        $this->assertStringContainsString("'serial_status'", $model);
+        $this->assertStringContainsString("Schema::table('nves'", $migration);
+        $this->assertStringContainsString("Schema::create('nves'", $tableMigration);
+        $this->assertStringContainsString("string('serial_status'", $migration);
+        $this->assertStringContainsString('Quantidade de seriais informados nao corresponde a quantidade comprada.', $compraController);
+        $this->assertStringContainsString('liberaEstoqueCompraSerializada', $compraController);
+        $this->assertStringContainsString('compraSerialPendenteDaEmpresa', $compraController);
+        $this->assertStringContainsString('compras.set-codigo-unico', $compraController);
+        $this->assertStringContainsString('!$compra->serialEntradaPendente()', $compraController);
+        $this->assertStringContainsString('$compraSerialPendente = isset($request->is_compra) && (bool)$product->tipo_unico;', $nfeController);
+        $this->assertStringContainsString('!$compraSerialPendente', $nfeController);
+        $this->assertStringContainsString('$nfe->syncSerialStatus();', $nfeController);
+        $this->assertStringContainsString('Pendente de seriais', $index);
+    }
+
+    public function test_pending_serial_purchase_cannot_generate_or_transmit_nfe(): void
+    {
+        $webController = file_get_contents(app_path('Http/Controllers/NfeController.php'));
+        $apiController = file_get_contents(app_path('Http/Controllers/API/NFePainelController.php'));
+
+        $this->assertStringContainsString('Informe todos os seriais da compra antes de gerar o XML.', $webController);
+        $this->assertStringContainsString('serialEntradaPendente()', $webController);
+        $this->assertStringContainsString('Informe todos os seriais da compra antes de transmitir a NFe.', $apiController);
+        $this->assertStringContainsString('], 422)', $apiController);
     }
 
     public function test_manual_stock_entry_and_exit_validate_serials_and_are_transactional(): void
@@ -64,6 +103,7 @@ class SuperstoreSerialRegressionTest extends TestCase
         $this->assertStringContainsString("orWhere('produto_unicos.status_key', '')", $controller);
         $this->assertStringContainsString("where('produto_unicos.produto_id', \$request->produto_id)", $controller);
         $this->assertStringContainsString("where('produto_unicos.local_id', \$localId)", $controller);
+        $this->assertStringContainsString("orWhereNull('produto_unicos.local_id')", $controller);
         $this->assertStringContainsString("where('produto_unicos.deposito_id', \$depositoId)", $controller);
         $this->assertStringContainsString('local_id: $("#local_id").val()', $publicJs);
         $this->assertStringContainsString('local_id: $("#local_id").val()', $sourceJs);

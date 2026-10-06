@@ -269,7 +269,10 @@ class ProdutoController extends Controller
             return $q->where('produto_unicos.codigo', 'LIKE', "%$request->pesquisa%");
         })
         ->when($localId, function ($q) use ($localId) {
-            return $q->where('produto_unicos.local_id', $localId);
+            return $q->where(function ($query) use ($localId) {
+                $query->where('produto_unicos.local_id', $localId)
+                    ->orWhereNull('produto_unicos.local_id');
+            });
         })
         ->when($depositoId, function ($q) use ($depositoId) {
             return $q->where('produto_unicos.deposito_id', $depositoId);

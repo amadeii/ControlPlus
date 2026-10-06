@@ -52,7 +52,7 @@ class TradeinModuleRegressionTest extends TestCase
         $this->assertNotNull($store);
         $this->assertNotNull($inventoryUpdate);
         $this->assertContains('permission:pdv_edit', $store->gatherMiddleware());
-        $this->assertContains('permission:tradein_view', $inventoryUpdate->gatherMiddleware());
+        $this->assertContains('permission:tradein_edit', $inventoryUpdate->gatherMiddleware());
         $this->assertStringContainsString('path_url + "trade-in/store"', $frontBoxJs);
         $this->assertStringContainsString('Selecione um cliente para criar o trade-in.', $frontBoxJs);
         $this->assertStringContainsString('Selecione um produto', $frontBoxJs);

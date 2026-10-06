@@ -10,6 +10,8 @@
         value="{{ $cAut_cartao_row ?? '' }}">
         <input readonly type="hidden" name="cnpj_cartao_row[]" class="form-control"
         value="{{ $cnpj_cartao_row ?? '' }}">
+        <input readonly type="hidden" name="parcelas_cartao_row[]" class="form-control"
+        value="{{ $parcelas_cartao_row ?? 1 }}">
     </td>
 	<td>
 		<input readonly type="date" name="data_vencimento_row[]" class="form-control data_multiplo"

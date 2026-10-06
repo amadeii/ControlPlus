@@ -19,8 +19,8 @@ class TradeinInventoryController extends Controller
     public function __construct(
         private TradeinAssistenciaFinalizacaoService $tradeinAssistenciaFinalizacaoService,
     ) {
-        $this->middleware('permission:tradein_view', ['only' => ['index', 'transferRedirect', 'edit', 'update']]);
-        $this->middleware('permission:tradein_edit', ['only' => ['enviarParaAssistencia', 'aprovarParaVenda']]);
+        $this->middleware('permission:tradein_view', ['only' => ['index', 'transferRedirect', 'edit']]);
+        $this->middleware('permission:tradein_edit', ['only' => ['update', 'enviarParaAssistencia', 'aprovarParaVenda']]);
     }
 
     public function index(Request $request)

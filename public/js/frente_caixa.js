@@ -1518,6 +1518,9 @@ function consultaDebito() {
 $("#salvar_venda").click(() => {
     // consultaDebito()
     setTimeout(() => {
+        if (pixFinalizacaoEmAndamento || pdvFinalizacaoEmAndamento) {
+            return;
+        }
         if (
             $("#definir_vendedor_pdv").val() == 1 &&
             !$("#inp-funcionario_id").val()
@@ -1527,6 +1530,8 @@ $("#salvar_venda").click(() => {
         }
         let tipo_pagamento = $("#inp-tipo_pagamento").val();
         if (tipo_pagamento == 17) {
+            clearPixPolling();
+            setPixFinalizacaoEmAndamento(true);
             let desconto = convertMoedaToFloat($("#valor_desconto").text());
             let acrescimo = convertMoedaToFloat($("#valor_acrescimo").text());
             let valor_frete = convertMoedaToFloat($(".valor-frete").text());
@@ -1539,18 +1544,43 @@ $("#salvar_venda").click(() => {
 
             $.post(path_url + "api/frenteCaixa/qr-code-pix", data)
                 .done((success) => {
+                    const pollingToken = ++pixPollingToken;
+                    let pay = false;
+                    let pollingInFlight = false;
+
+                    pixPollingTimeout = setTimeout(() => {
+                        if (
+                            pollingToken === pixPollingToken &&
+                            pay === false
+                        ) {
+                            encerrarPixComErro(
+                                "Tempo limite aguardando aprovacao do Pix. Confira o pagamento antes de tentar novamente.",
+                            );
+                        }
+                    }, PIX_POLLING_TIMEOUT_MS);
+
                     // console.log(success)
                     swal("Sucesso", "Chave PIX gerada", "success").then(() => {
+                        if (
+                            pollingToken !== pixPollingToken ||
+                            !pixFinalizacaoEmAndamento
+                        ) {
+                            return;
+                        }
                         $(".qrcode").attr(
                             "src",
                             "data:image/jpeg;base64," + success["qrcode"],
                         );
                         $("#modal-pix").modal("show");
                         let payment_id = success["payment_id"];
-                        let pay = false;
 
-                        setInterval(() => {
-                            if (pay == false) {
+                        pixPollingInterval = setInterval(() => {
+                            if (
+                                pay === false &&
+                                !pollingInFlight &&
+                                pollingToken === pixPollingToken
+                            ) {
+                                pollingInFlight = true;
                                 let data = {
                                     payment_id: payment_id,
                                     usuario_id: $("#usuario_id").val(),
@@ -1562,30 +1592,60 @@ $("#salvar_venda").click(() => {
                                     data,
                                 )
                                     .done((res) => {
+                                        if (
+                                            pollingToken !== pixPollingToken ||
+                                            pay
+                                        ) {
+                                            return;
+                                        }
                                         if (res == "approved") {
-                                            $("#modal-pix").modal("hide");
-                                            if (pay == false) {
-                                                swal(
-                                                    "Sucesso",
-                                                    "Pagamento aprovado",
-                                                    "success",
-                                                ).then(() => {
-                                                    // $('#finalizar_venda').modal('show')
-                                                    finalizarVendaModal();
-                                                });
-                                            }
                                             pay = true;
+                                            clearPixPolling();
+                                            $("#modal-pix").modal("hide");
+                                            swal(
+                                                "Sucesso",
+                                                "Pagamento aprovado",
+                                                "success",
+                                            ).then(() => {
+                                                if (pixFinalizacaoEmAndamento) {
+                                                    finalizarVendaModal();
+                                                }
+                                            });
+                                        } else if (
+                                            [
+                                                "rejected",
+                                                "cancelled",
+                                                "canceled",
+                                                "refunded",
+                                                "charged_back",
+                                            ].includes(String(res || "").toLowerCase())
+                                        ) {
+                                            pay = true;
+                                            encerrarPixComErro(
+                                                "Pagamento Pix retornou status " + res + ".",
+                                            );
                                         }
                                     })
-                                    .fail((err) => {});
+                                    .fail((err) => {
+                                        if (
+                                            pollingToken !== pixPollingToken ||
+                                            pay
+                                        ) {
+                                            return;
+                                        }
+                                        pay = true;
+                                        encerrarPixComErro(getAjaxErrorMessage(err));
+                                    })
+                                    .always(() => {
+                                        pollingInFlight = false;
+                                    });
                             }
-                        }, 4000);
+                        }, PIX_POLLING_INTERVAL_MS);
                     });
                 })
                 .fail((err) => {
                     console.log(err);
-                    // $('#finalizar_venda').modal('show')
-                    finalizarVendaModal();
+                    encerrarPixComErro(getAjaxErrorMessage(err));
                 });
         } else {
             finalizarVendaModal();
@@ -2179,6 +2239,7 @@ $("#inp-tipo_pagamento_row").change(() => {
         $("#inp-bandeira_cartao_row_input").val("");
         $("#inp-cAut_cartao_row_input").val("");
         $("#inp-cnpj_cartao_row_input").val("");
+        $("#inp-parcelas_cartao_row_input").val("1");
     }
     if (tipo == TRADEIN_PAYMENT_CODE && !cliente) {
         swal(
@@ -2485,6 +2546,7 @@ $(".btn-add-payment").click(() => {
     let bandeira_cartao_row = $("#inp-bandeira_cartao_row_input").val() || "";
     let cAut_cartao_row = $("#inp-cAut_cartao_row_input").val() || "";
     let cnpj_cartao_row = $("#inp-cnpj_cartao_row_input").val() || "";
+    let parcelas_cartao_row = $("#inp-parcelas_cartao_row_input").val() || "1";
 
     validateButtonSave();
 
@@ -2565,6 +2627,15 @@ $(".btn-add-payment").click(() => {
         return;
     }
 
+    if (
+        isTipoPagamentoCredito(tipo_pagamento_row) &&
+        parseInt(parcelas_cartao_row, 10) < 1
+    ) {
+        swal("Atenção", "Informe a quantidade de parcelas do cartão.", "warning");
+        $("#inp-parcelas_cartao_row_input").focus();
+        return;
+    }
+
     if (vencimento && valor_integral_row && tipo_pagamento_row) {
         let dataRequest = {
             data_vencimento_row: vencimento,
@@ -2574,6 +2645,7 @@ $(".btn-add-payment").click(() => {
             bandeira_cartao_row: bandeira_cartao_row,
             cAut_cartao_row: cAut_cartao_row,
             cnpj_cartao_row: cnpj_cartao_row,
+            parcelas_cartao_row: parcelas_cartao_row,
         };
 
         $.get(path_url + "api/frenteCaixa/linhaParcelaVenda", dataRequest)
@@ -2583,6 +2655,7 @@ $(".btn-add-payment").click(() => {
                 $("#inp-bandeira_cartao_row_input").val("");
                 $("#inp-cAut_cartao_row_input").val("");
                 $("#inp-cnpj_cartao_row_input").val("");
+                $("#inp-parcelas_cartao_row_input").val("1");
                 $("#inp-observacao_row").val("");
                 $("#inp-valor_row").val("");
                 $("#inp-tipo_pagamento_row").val("").change();
@@ -3538,10 +3611,40 @@ var emitirNfce = false;
 var clienteCNPJ = false;
 var pdvFinalizacaoEmAndamento = false;
 var ultimaVendaFinalizadaId = null;
+var pixFinalizacaoEmAndamento = false;
+var pixPollingInterval = null;
+var pixPollingTimeout = null;
+var pixPollingToken = 0;
+var PIX_POLLING_INTERVAL_MS = 4000;
+var PIX_POLLING_TIMEOUT_MS = 120000;
 
 function setFinalizacaoPdvEmAndamento(status) {
     pdvFinalizacaoEmAndamento = status;
     $("#btn_fiscal, #btn_nao_fiscal, #salvar_venda").prop("disabled", status);
+}
+
+function clearPixPolling() {
+    pixPollingToken++;
+    if (pixPollingInterval) {
+        clearInterval(pixPollingInterval);
+        pixPollingInterval = null;
+    }
+    if (pixPollingTimeout) {
+        clearTimeout(pixPollingTimeout);
+        pixPollingTimeout = null;
+    }
+}
+
+function setPixFinalizacaoEmAndamento(status) {
+    pixFinalizacaoEmAndamento = status;
+    $("#salvar_venda").prop("disabled", status);
+}
+
+function encerrarPixComErro(message) {
+    clearPixPolling();
+    setPixFinalizacaoEmAndamento(false);
+    $("#modal-pix").modal("hide");
+    swal("Pix nao aprovado", message, "error");
 }
 
 function redirecionaPosFluxoFiscal() {
@@ -3930,12 +4033,16 @@ function validarDadosCartaoCredito(json) {
         bandeira: ($("select[name='bandeira_cartao']").val() || "").trim(),
         cnpj: ($("input[name='cnpj_cartao']").val() || "").trim(),
         codigo: ($("input[name='cAut_cartao']").val() || "").trim(),
+        parcelas: parseInt($("input[name='parcelas_cartao']").val() || "1", 10),
     };
     const dadosLinhas = resolveBandeiraCreditoFromRows(json);
 
     json.bandeira_cartao = dadosModal.bandeira || dadosLinhas.bandeira;
     json.cnpj_cartao = dadosModal.cnpj || dadosLinhas.cnpj;
     json.cAut_cartao = dadosModal.codigo || dadosLinhas.codigo;
+    json.parcelas_cartao = Number.isFinite(dadosModal.parcelas)
+        ? Math.max(1, dadosModal.parcelas)
+        : 1;
 
     if (!vendaTemPagamentoCredito(json)) {
         return true;
@@ -3971,6 +4078,15 @@ function validarDadosCartaoCredito(json) {
                 $("#cartao_credito select[name='bandeira_cartao']").focus();
             }, 50);
         }
+        return false;
+    }
+
+    if (parseInt(json.parcelas_cartao || "1", 10) < 1) {
+        toastr.warning("Informe a quantidade de parcelas do cartão.");
+        showModal("#cartao_credito");
+        setTimeout(() => {
+            $("#cartao_credito input[name='parcelas_cartao']").focus();
+        }, 50);
         return false;
     }
 
@@ -4072,6 +4188,7 @@ $("#form-pdv").on("submit", function (e) {
             })
             .fail((err) => {
                 setFinalizacaoPdvEmAndamento(false);
+                setPixFinalizacaoEmAndamento(false);
                 const message = getAjaxErrorMessage(err);
                 swal("Erro", message, "error");
                 console.log(err);
@@ -4090,6 +4207,7 @@ function storeNfe(json) {
         })
         .fail((err) => {
             setFinalizacaoPdvEmAndamento(false);
+            setPixFinalizacaoEmAndamento(false);
             const message = getAjaxErrorMessage(err);
             swal("Erro", message, "error");
             console.log(err);
@@ -4236,6 +4354,7 @@ $("#form-pdv-update").on("submit", function (e) {
             })
             .fail((err) => {
                 setFinalizacaoPdvEmAndamento(false);
+                setPixFinalizacaoEmAndamento(false);
                 const message = getAjaxErrorMessage(err);
                 swal("Erro", message, "error");
                 console.log(err);

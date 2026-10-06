@@ -62,6 +62,11 @@ class NFePainelController extends Controller
     public function emitir(Request $request){
 
         $nfe = Nfe::findOrFail($request->id);
+        if ($nfe->serialEntradaPendente()) {
+            return response()->json([
+                'message' => 'Informe todos os seriais da compra antes de transmitir a NFe.'
+            ], 422);
+        }
 
         $empresa = Empresa::findOrFail($nfe->empresa_id);
         $empresa = __objetoParaEmissao($empresa, $nfe->local_id);

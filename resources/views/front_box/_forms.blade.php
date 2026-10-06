@@ -918,7 +918,7 @@
     senhaAcao = "{{ $config->senha_manipula_valor }}";
     @endif
 </script>
-<script src="/js/frente_caixa.js" type=""></script>
+<script src="/js/frente_caixa.js?v={{ filemtime(public_path('js/frente_caixa.js')) }}" type=""></script>
 <script src="/js/tradein_checklist_tecnico.js" type=""></script>
 <script src="/js/comanda_pdv.js"></script>
 

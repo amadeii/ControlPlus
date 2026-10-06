@@ -152,6 +152,10 @@ class CompraController extends Controller
             session()->flash("flash_warning", "Abrir caixa antes de continuar!");
             return redirect()->route('caixa.create');
         }
+        if ($pendente = $this->compraSerialPendenteDaEmpresa((int)$request->empresa_id)) {
+            session()->flash('flash_warning', 'Conclua os seriais da compra pendente antes de cadastrar uma nova entrada.');
+            return redirect()->route('compras.set-codigo-unico', $pendente->id);
+        }
         $sizeFornecedores = Fornecedor::where('empresa_id', request()->empresa_id)->count();
         if ($sizeFornecedores == 0) {
             session()->flash("flash_warning", "Primeiro cadastre um fornecedor!");
@@ -164,7 +168,9 @@ class CompraController extends Controller
         }
         $transportadoras = Transportadora::where('empresa_id', request()->empresa_id)->get();
         $cidades = Cidade::all();
-        $naturezas = NaturezaOperacao::where('empresa_id', request()->empresa_id)->get();
+        $naturezas = NaturezaOperacao::where('empresa_id', request()->empresa_id)
+            ->entrada()
+            ->get();
         if (sizeof($naturezas) == 0) {
             session()->flash("flash_warning", "Primeiro cadastre um natureza de operação!");
             return redirect()->route('natureza-operacao.create');
@@ -233,6 +239,10 @@ class CompraController extends Controller
         if (!__isCaixaAberto()) {
             session()->flash("flash_warning", "Abrir caixa antes de continuar!");
             return redirect()->route('caixa.create');
+        }
+        if ($pendente = $this->compraSerialPendenteDaEmpresa((int)request()->empresa_id)) {
+            session()->flash('flash_warning', 'Conclua os seriais da compra pendente antes de importar outra entrada.');
+            return redirect()->route('compras.set-codigo-unico', $pendente->id);
         }
         return view('compras.xml');
     }
@@ -525,7 +535,9 @@ class CompraController extends Controller
 
             $transportadoras = Transportadora::where('empresa_id', request()->empresa_id)->get();
             $cidades = Cidade::all();
-            $naturezas = NaturezaOperacao::where('empresa_id', request()->empresa_id)->get();
+            $naturezas = NaturezaOperacao::where('empresa_id', request()->empresa_id)
+                ->entrada()
+                ->get();
             if (sizeof($naturezas) == 0) {
                 session()->flash("flash_warning", "Primeiro cadastre um natureza de operação!");
                 return redirect()->route('natureza-operacao.create');
@@ -610,6 +622,13 @@ class CompraController extends Controller
         try {
 
             $nfe = DB::transaction(function () use ($request) {
+                $naturezaValida = NaturezaOperacao::where('empresa_id', $request->empresa_id)
+                    ->where('id', $request->natureza_id)
+                    ->entrada()
+                    ->exists();
+                if (!$naturezaValida) {
+                    throw new \Exception('Selecione uma natureza de operação de entrada para importar a compra.');
+                }
 
                 $fornecedor_id = isset($request->fornecedor_id) ? $request->fornecedor_id : null;
 
@@ -772,7 +791,7 @@ class CompraController extends Controller
                     $product->valor_unitario = $valorVenda;
                     $product->save();
 
-                    if ($product->gerenciar_estoque) {
+                    if ($product->gerenciar_estoque && !(bool)$product->tipo_unico) {
                         $this->util->incrementaEstoque($product->id, $quantidade, null, $local_id, $deposito_id);
                         $tipo = 'incremento';
                         $codigo_transacao = $nfe->id;
@@ -816,12 +835,17 @@ class CompraController extends Controller
                         }
                     }
                 }
+                $nfe->syncSerialStatus();
                 return $nfe;
             });
 $descricaoLog = $nfe->fornecedor->info . " R$ " . __moeda($nfe->total);
 __createLog($request->empresa_id, 'Importação XML', 'cadastrar', $descricaoLog);
 
 session()->flash("flash_success", "Importação cadastrada!");
+
+if ($nfe->serialEntradaPendente()) {
+    return redirect()->route('compras.set-codigo-unico', $nfe->id);
+}
 
 if ($nfe->isItemValidade()) {
     return redirect()->route('compras.info-validade', $nfe->id);
@@ -1081,10 +1105,19 @@ public function setarInfoValidade(Request $request)
 public function setCodigoUnico($id)
 {
     $compra = Nfe::findOrFail($id);
+    __validaObjetoEmpresa($compra);
+    $compra->syncSerialStatus();
+
+    if (!$compra->serialEntradaPendente()) {
+        session()->flash('flash_success', 'Seriais desta compra ja foram definidos.');
+        return redirect()->route('compras.index');
+    }
+
     $produtos = [];
     foreach ($compra->itens as $i) {
         if ($i->produto->tipo_unico) {
-            for ($x=0; $x<$i->quantidade; $x++) {
+            $quantidade = max(1, (int)round((float)$i->quantidade));
+            for ($x=0; $x<$quantidade; $x++) {
                 array_push($produtos, $i);
             }
         }
@@ -1096,10 +1129,25 @@ public function setarCodigoUnico(Request $request)
 {
     try {
         DB::transaction(function () use ($request) {
-            $nfe = Nfe::with('itens')->findOrFail($request->nfe_id);
+            $nfe = Nfe::whereKey($request->nfe_id)->lockForUpdate()->firstOrFail();
+            $nfe->load('itens');
             __validaObjetoEmpresa($nfe);
             $localId = $nfe->local_id;
             $depositoId = $nfe->deposito_id;
+            $esperado = $nfe->quantidadeSeriaisEntradaEsperada();
+            $informados = is_array($request->produto_id) ? sizeof($request->produto_id) : 0;
+            $pendenteAntes = $nfe->serialEntradaPendente();
+
+            if ($esperado <= 0) {
+                throw new \Exception('Esta compra nao possui produtos serializados pendentes.');
+            }
+            if (!$pendenteAntes) {
+                throw new \Exception('Os seriais desta compra ja foram definidos.');
+            }
+
+            if ($informados !== $esperado) {
+                throw new \Exception('Quantidade de seriais informados nao corresponde a quantidade comprada.');
+            }
 
             if (!$localId && function_exists('__getLocalPadraoEmpresa')) {
                 $localPadrao = __getLocalPadraoEmpresa((int)$nfe->empresa_id);
@@ -1126,7 +1174,7 @@ public function setarCodigoUnico(Request $request)
                 });
 
                 if (!$itemCompra) {
-                    throw new \Exception('Item da compra invÃ¡lido para o serial informado.');
+                    throw new \Exception('Item da compra inválido para o serial informado.');
                 }
 
                 $chave = $produtoId . '|' . strtoupper($codigo);
@@ -1136,12 +1184,11 @@ public function setarCodigoUnico(Request $request)
                 $codigosInformados[$chave] = true;
 
                 $serialExistente = ProdutoUnico::where('produto_id', $produtoId)
-                    ->where('codigo', $codigo)
-                    ->where('tipo', 'entrada')
+                    ->whereRaw('UPPER(codigo) = ?', [strtoupper($codigo)])
                     ->lockForUpdate()
                     ->exists();
                 if ($serialExistente) {
-                    throw new \Exception("Serial {$codigo} jÃ¡ cadastrado para este produto.");
+                    throw new \Exception("Serial {$codigo} já cadastrado para este produto.");
                 }
 
                 ProdutoUnico::create([
@@ -1159,6 +1206,11 @@ public function setarCodigoUnico(Request $request)
                     'status_key' => StatusKeyUtil::DEFAULT_STATUS,
                 ]);
             }
+
+            $nfe->syncSerialStatus();
+            if ($pendenteAntes && !$nfe->serialEntradaPendente()) {
+                $this->liberaEstoqueCompraSerializada($nfe, $localId);
+            }
         });
     } catch (\Throwable $e) {
         session()->flash('flash_error', 'Algo deu errado: ' . $e->getMessage());
@@ -1167,6 +1219,42 @@ public function setarCodigoUnico(Request $request)
 
     session()->flash('flash_success', 'Dados definidos com sucesso!');
     return redirect()->route('compras.index');
+}
+
+private function liberaEstoqueCompraSerializada(Nfe $nfe, ?int $localId): void
+{
+    if (!$nfe->natureza || (int)$nfe->natureza->movimentar_estoque !== 1) {
+        return;
+    }
+
+    foreach ($nfe->itens as $item) {
+        if (!$item->produto || !(bool)$item->produto->tipo_unico || !$item->produto->gerenciar_estoque) {
+            continue;
+        }
+
+        $quantidade = max(1, (int)round((float)$item->quantidade));
+        $this->util->incrementaEstoque($item->produto_id, $quantidade, $item->variacao_id, $localId, $nfe->deposito_id);
+        $this->util->movimentacaoProduto(
+            $item->produto_id,
+            $quantidade,
+            'incremento',
+            $nfe->id,
+            'compra',
+            \Auth::id(),
+            $item->variacao_id,
+            $localId,
+            $nfe->deposito_id
+        );
+    }
+}
+
+private function compraSerialPendenteDaEmpresa(int $empresaId): ?Nfe
+{
+    return Nfe::where('empresa_id', $empresaId)
+        ->where('tpNF', 0)
+        ->where('serial_status', Nfe::SERIAL_STATUS_PENDENTE)
+        ->orderBy('created_at')
+        ->first();
 }
 
 public function show($id){

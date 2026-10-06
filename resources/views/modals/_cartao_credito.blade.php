@@ -14,6 +14,9 @@
                         ]) !!}
                     </div>
                     <div class="col-md-6 mt-3">
+                        {!! Form::number('parcelas_cartao', 'Parcelas')->attrs(['min' => 1, 'max' => 24, 'step' => 1])->value(1) !!}
+                    </div>
+                    <div class="col-md-6 mt-3">
                         {!! Form::tel('cAut_cartao', 'Código autorização (opcional)')->attrs(['class' => '']) !!}
                     </div>
                     <div class="col-md-6 mt-3">

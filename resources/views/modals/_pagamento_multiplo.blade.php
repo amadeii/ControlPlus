@@ -32,10 +32,13 @@
                     <div class="col-md-4">
                         {!! Form::select('bandeira_cartao_row_input', 'Bandeira do cartão', ['' => 'Selecione'] + App\Models\Nfce::bandeiras())->attrs(['class' => 'form-select']) !!}
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-2">
+                        {!! Form::number('parcelas_cartao_row_input', 'Parcelas')->attrs(['min' => 1, 'max' => 24, 'step' => 1])->value(1) !!}
+                    </div>
+                    <div class="col-md-3">
                         {!! Form::tel('cAut_cartao_row_input', 'Código autorização (opcional)')->attrs(['class' => '']) !!}
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         {!! Form::tel('cnpj_cartao_row_input', 'CNPJ (opcional)')->attrs(['class' => 'cnpj']) !!}
                     </div>
                 </div>
@@ -67,6 +70,8 @@
                                     value="{{ in_array($fatura->tipo_pagamento, ['03', '30']) ? ($item->cAut_cartao ?? '') : '' }}">
                                     <input readonly type="hidden" name="cnpj_cartao_row[]" class="form-control"
                                     value="{{ in_array($fatura->tipo_pagamento, ['03', '30']) ? ($item->cnpj_cartao ?? '') : '' }}">
+                                    <input readonly type="hidden" name="parcelas_cartao_row[]" class="form-control"
+                                    value="{{ in_array($fatura->tipo_pagamento, ['03', '30']) ? ($fatura->total_parcelas ?? 1) : 1 }}">
                                 </td>
                                 <td>
                                     <input readonly type="date" name="data_vencimento_row[]" class="form-control data_multiplo" value="{{ $fatura->data_vencimento }}">

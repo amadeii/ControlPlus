@@ -583,7 +583,7 @@
     toastr.warning('{{ $msgTroca }}');
 </script>
 @endif
-<script src="/js/frente_caixa.js" type=""></script>
+<script src="/js/frente_caixa.js?v={{ filemtime(public_path('js/frente_caixa.js')) }}" type=""></script>
 <script type="text/javascript" src="/js/mousetrap.js"></script>
 <script type="text/javascript" src="/js/controla_conta_empresa.js"></script>
 {{-- Fonte de verdade para o JS: evita validação "produto novo" na devolução se #inp-modalidade não for lido (cache/outro script) --}}

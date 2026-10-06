@@ -205,6 +205,48 @@ class FrontBoxController extends Controller
         return $dadosCartao;
     }
 
+    private function resolveParcelasCartao($value): int
+    {
+        if ($value === null || $value === '') {
+            return 1;
+        }
+        if (!is_numeric($value) || (float)$value !== (float)(int)$value) {
+            throw new \Exception('Quantidade de parcelas do cartão deve ser um número inteiro.');
+        }
+
+        $parcelas = (int)$value;
+        if ($parcelas < 1) {
+            throw new \Exception('Quantidade de parcelas do cartão deve ser maior que zero.');
+        }
+        if ($parcelas > 24) {
+            throw new \Exception('Quantidade de parcelas do cartão não pode ser maior que 24.');
+        }
+
+        return $parcelas;
+    }
+
+    private function parcelasCartaoCredito(float $valorTotal, int $totalParcelas, ?string $primeiroVencimento = null): array
+    {
+        $totalParcelas = $this->resolveParcelasCartao($totalParcelas);
+        $valorParcela = (float)number_format($valorTotal / $totalParcelas, 2, '.', '');
+        $soma = 0;
+        $parcelas = [];
+        $primeiroVencimento = $primeiroVencimento ?: date('Y-m-d');
+
+        for ($i = 1; $i <= $totalParcelas; $i++) {
+            $valor = $i === $totalParcelas ? (float)number_format($valorTotal - $soma, 2, '.', '') : $valorParcela;
+            $soma += $valor;
+            $parcelas[] = [
+                'numero' => $i,
+                'total' => $totalParcelas,
+                'valor' => $valor,
+                'vencimento' => date('Y-m-d', strtotime($primeiroVencimento . ' +' . ($i - 1) . ' month')),
+            ];
+        }
+
+        return $parcelas;
+    }
+
     public function faturaPadraoCliente(Request $request){
         try {
             $cliente = Cliente::findOrFail($request->cliente_id);
@@ -625,6 +667,7 @@ class FrontBoxController extends Controller
             $bandeira_cartao_row = $request->bandeira_cartao_row;
             $cAut_cartao_row = $request->cAut_cartao_row;
             $cnpj_cartao_row = $request->cnpj_cartao_row;
+            $parcelas_cartao_row = max(1, (int)($request->parcelas_cartao_row ?? 1));
 
             $tipo = Nfce::getTipoPagamento($tipo_pagamento_row);
             return view('front_box.partials.row_pagamento_multiplo', compact(
@@ -636,7 +679,8 @@ class FrontBoxController extends Controller
                 'tipo_pagamento_row',
                 'bandeira_cartao_row',
                 'cAut_cartao_row',
-                'cnpj_cartao_row'
+                'cnpj_cartao_row',
+                'parcelas_cartao_row'
             ));
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 401);
@@ -950,7 +994,12 @@ class FrontBoxController extends Controller
             || (is_array($request->fatura) && sizeof($request->fatura) > 0);
     }
 
-    private function extractMultiplePaymentAmount(Request $request): float
+    private function amountToCents($value): int
+    {
+        return (int)round((float)__convert_value_bd($value) * 100);
+    }
+
+    private function extractMultiplePaymentAmount(Request $request): int
     {
         $total = 0;
         $tiposPagamentoRows = $this->getRequestArray($request, 'tipo_pagamento_row');
@@ -962,10 +1011,10 @@ class FrontBoxController extends Controller
                 if ($tipo === '') {
                     continue;
                 }
-                $valorLinha = max(0, (float) __convert_value_bd($valorIntegralRows[$i] ?? 0));
+                $valorLinha = max(0, $this->amountToCents($valorIntegralRows[$i] ?? 0));
                 $total += $valorLinha;
             }
-            return (float) $total;
+            return $total;
         }
 
         if (is_array($request->fatura) && sizeof($request->fatura) > 0) {
@@ -980,11 +1029,11 @@ class FrontBoxController extends Controller
                 $valor = is_array($fatura)
                     ? ($fatura['valor'] ?? ($fatura['valor_integral'] ?? 0))
                     : ($fatura->valor ?? ($fatura->valor_integral ?? 0));
-                $total += max(0, (float) __convert_value_bd($valor));
+                $total += max(0, $this->amountToCents($valor));
             }
         }
 
-        return (float) $total;
+        return $total;
     }
 
     private function validateMultiplePaymentAmountAgainstSale(Request $request): void
@@ -993,11 +1042,15 @@ class FrontBoxController extends Controller
             return;
         }
 
-        $valorVenda = max(0, (float) __convert_value_bd($request->valor_total));
+        $valorVenda = max(0, $this->amountToCents($request->valor_total));
         $valorPagamentos = $this->extractMultiplePaymentAmount($request);
 
-        if ($valorPagamentos > ($valorVenda + 0.0001)) {
+        if ($valorPagamentos > $valorVenda) {
             abort(422, 'A soma dos pagamentos não pode ser maior que o total da venda.');
+        }
+
+        if ($valorPagamentos !== $valorVenda) {
+            abort(422, 'A soma dos pagamentos deve ser igual ao total da venda.');
         }
     }
 
@@ -1520,13 +1573,18 @@ class FrontBoxController extends Controller
                 $valorIntegralRows = is_array($request->valor_integral_row) ? $request->valor_integral_row : [];
                 $dataVencimentoRows = is_array($request->data_vencimento_row) ? $request->data_vencimento_row : [];
                 $obsRows = is_array($request->obs_row) ? $request->obs_row : [];
+                $bandeiraCartaoRows = is_array($request->bandeira_cartao_row) ? $request->bandeira_cartao_row : [];
+                $cAutCartaoRows = is_array($request->cAut_cartao_row) ? $request->cAut_cartao_row : [];
+                $cnpjCartaoRows = is_array($request->cnpj_cartao_row) ? $request->cnpj_cartao_row : [];
+                $parcelasCartaoRows = is_array($request->parcelas_cartao_row) ? $request->parcelas_cartao_row : [];
 
                 $linhasPagamento = [];
                 $totalRows = max(
                     sizeof($tipoPagamentoRows),
                     sizeof($valorIntegralRows),
                     sizeof($dataVencimentoRows),
-                    sizeof($obsRows)
+                    sizeof($obsRows),
+                    sizeof($parcelasCartaoRows)
                 );
 
                 for ($i = 0; $i < $totalRows; $i++) {
@@ -1545,35 +1603,57 @@ class FrontBoxController extends Controller
                         'valor' => $valorLinha,
                         'vencimento' => ($dataVencimentoRows[$i] ?? null) ?: date('Y-m-d'),
                         'observacao' => $obsRows[$i] ?? '',
+                        'bandeira_cartao' => $bandeiraCartaoRows[$i] ?? null,
+                        'cAut_cartao' => $cAutCartaoRows[$i] ?? null,
+                        'cnpj_cartao' => $cnpjCartaoRows[$i] ?? null,
+                        'parcelas_cartao' => $this->isTipoPagamentoCredito($tipoPagamentoLinha)
+                            ? $this->resolveParcelasCartao($parcelasCartaoRows[$i] ?? 1)
+                            : 1,
                     ];
                 }
 
                 if (sizeof($linhasPagamento) > 0) {
-                    $totalLinhas = sizeof($linhasPagamento);
-                    foreach ($linhasPagamento as $index => $linhaPagamento) {
-                        ContaReceber::gerarDeFaturaNfce([
-                            'empresa_id' => $request->empresa_id,
-                            'nfce_id' => $nfce->id,
-                            'cliente_id' => $request->cliente_id,
-                            'data_vencimento' => $linhaPagamento['vencimento'],
-                            'data_recebimento' => $linhaPagamento['vencimento'],
-                            'valor_integral' => $linhaPagamento['valor'],
-                            'valor_recebido' => 0,
-                            'status' => 0,
-                            'descricao' => 'Venda PDV #' . $nfce->numero_sequencial . ' Parcela ' . ($index + 1) . ' de ' . $totalLinhas,
-                            'observacao' => $linhaPagamento['observacao'],
-                            'tipo_pagamento' => $linhaPagamento['tipo_pagamento'],
-                            'local_id' => $caixa->local_id,
-                            'caixa_id' => $caixa->id,
-                            'referencia' => "Pedido PDV {$nfce->numero_sequencial} " . ($index + 1) . "/" . $totalLinhas
-                        ]);
+                    foreach ($linhasPagamento as $linhaPagamento) {
+                        $parcelas = $this->isTipoPagamentoCredito($linhaPagamento['tipo_pagamento'])
+                            ? $this->parcelasCartaoCredito($linhaPagamento['valor'], $linhaPagamento['parcelas_cartao'], $linhaPagamento['vencimento'])
+                            : [[
+                                'numero' => 1,
+                                'total' => 1,
+                                'valor' => $linhaPagamento['valor'],
+                                'vencimento' => $linhaPagamento['vencimento'],
+                            ]];
 
-                        FaturaNfce::create([
-                            'nfce_id' => $nfce->id,
-                            'tipo_pagamento' => $linhaPagamento['tipo_pagamento'],
-                            'data_vencimento' => $linhaPagamento['vencimento'],
-                            'valor' => $linhaPagamento['valor']
-                        ]);
+                        foreach ($parcelas as $parcela) {
+                            ContaReceber::gerarDeFaturaNfce([
+                                'empresa_id' => $request->empresa_id,
+                                'nfce_id' => $nfce->id,
+                                'cliente_id' => $request->cliente_id,
+                                'data_vencimento' => $parcela['vencimento'],
+                                'data_recebimento' => $parcela['vencimento'],
+                                'valor_integral' => $parcela['valor'],
+                                'valor_recebido' => 0,
+                                'status' => 0,
+                                'descricao' => 'Venda PDV #' . $nfce->numero_sequencial . ' Parcela ' . $parcela['numero'] . ' de ' . $parcela['total'],
+                                'observacao' => $linhaPagamento['observacao'],
+                                'tipo_pagamento' => $linhaPagamento['tipo_pagamento'],
+                                'local_id' => $caixa->local_id,
+                                'caixa_id' => $caixa->id,
+                                'referencia' => "Pedido PDV {$nfce->numero_sequencial} {$parcela['numero']}/{$parcela['total']}"
+                            ]);
+
+                            FaturaNfce::create([
+                                'nfce_id' => $nfce->id,
+                                'tipo_pagamento' => $linhaPagamento['tipo_pagamento'],
+                                'data_vencimento' => $parcela['vencimento'],
+                                'valor' => $parcela['valor'],
+                                'observacao' => $linhaPagamento['observacao'],
+                                'parcela_numero' => $parcela['numero'],
+                                'total_parcelas' => $parcela['total'],
+                                'bandeira_cartao' => $linhaPagamento['bandeira_cartao'],
+                                'cnpj_cartao' => $linhaPagamento['cnpj_cartao'],
+                                'cAut_cartao' => $linhaPagamento['cAut_cartao'],
+                            ]);
+                        }
                     }
                 } else {
                     $dataVencimentoPadrao = date('Y-m-d');
@@ -1581,29 +1661,46 @@ class FrontBoxController extends Controller
                         $dataVencimentoPadrao = $request->data_vencimento ?: date('Y-m-d', strtotime('+30 days'));
                     }
 
-                    FaturaNfce::create([
-                        'nfce_id' => $nfce->id,
-                        'tipo_pagamento' => $request->tipo_pagamento,
-                        'data_vencimento' => $dataVencimentoPadrao,
-                        'valor' => __convert_value_bd($request->valor_total)
-                    ]);
+                    $totalParcelas = $this->isTipoPagamentoCredito($request->tipo_pagamento)
+                        ? $this->resolveParcelasCartao($request->parcelas_cartao ?? 1)
+                        : 1;
+                    $parcelas = $this->parcelasCartaoCredito(
+                        __convert_value_bd($request->valor_total),
+                        $totalParcelas,
+                        $dataVencimentoPadrao
+                    );
 
-                    ContaReceber::gerarDeFaturaNfce([
-                        'empresa_id' => $request->empresa_id,
-                        'nfce_id' => $nfce->id,
-                        'cliente_id' => $request->cliente_id,
-                        'data_vencimento' => $dataVencimentoPadrao,
-                        'data_recebimento' => $dataVencimentoPadrao,
-                        'valor_integral' => __convert_value_bd($request->valor_total),
-                        'valor_recebido' => 0,
-                        'status' => 0,
-                        'descricao' => 'Venda PDV #' . $nfce->numero_sequencial,
-                        'tipo_pagamento' => $request->tipo_pagamento,
-                        'observacao' => $request->observacao,
-                        'local_id' => $caixa->local_id,
-                        'caixa_id' => $caixa->id,
-                        'referencia' => "Pedido PDV {$nfce->numero_sequencial} 1/1",
-                    ]);
+                    foreach ($parcelas as $parcela) {
+                        FaturaNfce::create([
+                            'nfce_id' => $nfce->id,
+                            'tipo_pagamento' => $request->tipo_pagamento,
+                            'data_vencimento' => $parcela['vencimento'],
+                            'valor' => $parcela['valor'],
+                            'observacao' => $request->observacao,
+                            'parcela_numero' => $parcela['numero'],
+                            'total_parcelas' => $parcela['total'],
+                            'bandeira_cartao' => $dadosCartao['bandeira'] ?: null,
+                            'cnpj_cartao' => $dadosCartao['cnpj'] ?: null,
+                            'cAut_cartao' => $dadosCartao['codigo'] ?: null,
+                        ]);
+
+                        ContaReceber::gerarDeFaturaNfce([
+                            'empresa_id' => $request->empresa_id,
+                            'nfce_id' => $nfce->id,
+                            'cliente_id' => $request->cliente_id,
+                            'data_vencimento' => $parcela['vencimento'],
+                            'data_recebimento' => $parcela['vencimento'],
+                            'valor_integral' => $parcela['valor'],
+                            'valor_recebido' => 0,
+                            'status' => 0,
+                            'descricao' => 'Venda PDV #' . $nfce->numero_sequencial . ' Parcela ' . $parcela['numero'] . ' de ' . $parcela['total'],
+                            'tipo_pagamento' => $request->tipo_pagamento,
+                            'observacao' => $request->observacao,
+                            'local_id' => $caixa->local_id,
+                            'caixa_id' => $caixa->id,
+                            'referencia' => "Pedido PDV {$nfce->numero_sequencial} {$parcela['numero']}/{$parcela['total']}",
+                        ]);
+                    }
                 }
 
                 if ($request->funcionario_id != null) {

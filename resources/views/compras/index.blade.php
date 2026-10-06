@@ -164,6 +164,10 @@
                                             <a href="{{ route('compras.info-validade', $item->id) }}" title="Editar Validade" type="button" class="btn btn-info btn-sm"><i class="ri-pencil-line"></i></a>
                                             @endif
 
+                                            @if($item->serialEntradaPendente())
+                                            <a href="{{ route('compras.set-codigo-unico', $item->id) }}" title="Informar seriais pendentes" type="button" class="btn btn-warning btn-sm"><i class="ri-barcode-line"></i></a>
+                                            @endif
+
                                             <a class="btn btn-info btn-sm" title="Imprimir Pedido" onclick="printPedido('{{ $item->id }}')">
                                                 <i class="ri-printer-line"></i>
                                             </a>
@@ -207,6 +211,8 @@
                                         <span class="btn btn-danger text-white btn-sm">Cancelado</span>
                                         @elseif($item->estado == 'rejeitado')
                                         <span class="btn btn-warning text-white btn-sm">Rejeitado</span>
+                                        @elseif($item->serialEntradaPendente())
+                                        <span class="btn btn-warning text-white btn-sm">Pendente de seriais</span>
                                         @else
                                         <span class="btn btn-info text-white btn-sm">Novo</span>
                                         @endif
