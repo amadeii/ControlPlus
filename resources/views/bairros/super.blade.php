@@ -4,7 +4,7 @@
     <div class="row">
         <div class="card">
             <div class="card-body">
-                <form method="POST" action="">
+                <form method="POST" action="{{ route('bairros-empresa.set-bairros') }}">
                     @csrf
                     <div class="col-md-12 mt-3">
                         <div class="table-responsive-sm">

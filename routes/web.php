@@ -641,7 +641,7 @@ Route::middleware(['verificaEmpresa', 'validaPlano', 'validaContrato'])->group(f
     Route::resource('cupom-desconto', 'CupomDescontoController');
     Route::resource('bairros-empresa', 'BairroEmpresaController');
     Route::get('bairros-empresa-super', 'BairroEmpresaController@super')->name('bairros-empresa.super');
-    Route::post('bairros-empresa-super', 'BairroEmpresaController@setBairros')->name('bairros-empresa.super');
+    Route::post('bairros-empresa-super', 'BairroEmpresaController@setBairros')->name('bairros-empresa.set-bairros');
 
     Route::resource('mdfe', 'MdfeController');
     Route::get('mdfe-inutilizar', 'MdfeController@inutilizar')->name('mdfe.inutilizar');
