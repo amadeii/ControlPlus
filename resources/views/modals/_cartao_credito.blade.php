@@ -14,8 +14,8 @@
                         ]) !!}
                     </div>
                     <div class="col-md-6 mt-3">
-                        <label for="parcelas_cartao" class="form-label">Parcelas</label>
-                        <input type="number" name="parcelas_cartao" id="parcelas_cartao" class="form-control" min="1" max="24" step="1" value="1">
+                        <label for="inp-parcelas_cartao" class="form-label">Parcelas</label>
+                        <input type="number" name="parcelas_cartao" id="inp-parcelas_cartao" class="form-control" min="1" max="24" step="1" value="1">
                     </div>
                     <div class="col-md-6 mt-3">
                         {!! Form::tel('cAut_cartao', 'Código autorização (opcional)')->attrs(['class' => '']) !!}

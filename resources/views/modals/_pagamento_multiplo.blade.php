@@ -33,8 +33,8 @@
                         {!! Form::select('bandeira_cartao_row_input', 'Bandeira do cartão', ['' => 'Selecione'] + App\Models\Nfce::bandeiras())->attrs(['class' => 'form-select']) !!}
                     </div>
                     <div class="col-md-2">
-                        <label for="parcelas_cartao_row_input" class="form-label">Parcelas</label>
-                        <input type="number" name="parcelas_cartao_row_input" id="parcelas_cartao_row_input" class="form-control" min="1" max="24" step="1" value="1">
+                        <label for="inp-parcelas_cartao_row_input" class="form-label">Parcelas</label>
+                        <input type="number" name="parcelas_cartao_row_input" id="inp-parcelas_cartao_row_input" class="form-control" min="1" max="24" step="1" value="1">
                     </div>
                     <div class="col-md-3">
                         {!! Form::tel('cAut_cartao_row_input', 'Código autorização (opcional)')->attrs(['class' => '']) !!}

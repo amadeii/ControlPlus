@@ -162,10 +162,13 @@ class ProdutoController extends Controller
 
             foreach($dataAppend as $v){
                 $v->valor_unitario = $v->valor;
-                $v->valor_compra = $v->produto->valor_compra;
+                if ($request->boolean('is_compra')) {
+                    $v->valor_compra = $v->produto->valor_compra;
+                }
                 $v->nome = $v->produto->nome . " - " . $v->descricao;
                 $v->codigo_variacao = $v->id;
                 $v->id = $v->produto_id;
+                $v->unsetRelation('produto');
                 $data->push($v);
             }
 
@@ -228,6 +231,10 @@ class ProdutoController extends Controller
 
             if($p instanceof Produto &&$p->precoComPromocao()){
                 $p->valor_unitario = $p->precoComPromocao()->valor;
+            }
+
+            if (!$request->boolean('is_compra')) {
+                $p->makeHidden(['valor_compra', 'percentual_lucro']);
             }
         }
 
