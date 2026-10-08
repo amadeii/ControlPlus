@@ -64,6 +64,14 @@
                         </select>
                     </div>
 
+                    <div class="col-md-2 mt-2">
+                        <label>Tipo único</label>
+                        <select class="form-select" id="modal_tipo_unico">
+                            <option value="1">Sim</option>
+                            <option value="0">Não</option>
+                        </select>
+                    </div>
+
                     <div class="col-md-3 mt-2">
                         <label>Código de barras</label>
                         <input class="form-control" type="text" id="modal_codigo_barras">

@@ -409,6 +409,7 @@ class CompraController extends Controller
                 $prod->estoque_minimo = $produto == null ? '' : $produto->estoque_minimo;
                 $prod->marca_id = $produto == null ? 0 : $produto->marca_id;
                 $prod->gerenciar_estoque = $produto == null ? $configGerenciaEstoque : $produto->gerenciar_estoque;
+                $prod->tipo_unico = $produto == null ? 0 : $produto->tipo_unico;
 
                 $prod->referencia = $produto == null ? '' : $produto->referencia;
                 $prod->referencia_balanca = $produto == null ? '' : $produto->referencia_balanca;
@@ -712,6 +713,7 @@ class CompraController extends Controller
                         $product->codigo_barras = $request->codigo_barras[$i];
                         $product->codigo_barras2 = $request->_codigo_barras2[$i];
                         $product->gerenciar_estoque = $request->_gerenciar_estoque[$i];
+                        $product->tipo_unico = $request->_tipo_unico[$i] ?? $product->tipo_unico ?? 0;
                         $product->estoque_minimo = __convert_value_bd($request->_estoque_minimo[$i]);
 
                         $product->quantidade_atacado = __convert_value_bd($request->_quantidade_atacado[$i]);
@@ -908,6 +910,7 @@ private function cadastrarProduto($request, $i, $local_id)
         'codigo_barras' => $request->codigo_barras[$i],
         'codigo_barras2' => $request->_codigo_barras2[$i],
         'gerenciar_estoque' => $request->_gerenciar_estoque[$i],
+        'tipo_unico' => $request->_tipo_unico[$i] ?? 0,
         'unidade' => $request->unidade[$i] ?? 'UN',
         'valor_unitario' => __convert_value_bd($request->valor_venda[$i]),
         'quantidade_atacado' => __convert_value_bd($request->_quantidade_atacado[$i]),

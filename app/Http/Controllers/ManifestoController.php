@@ -348,6 +348,7 @@ class ManifestoController extends Controller
             $prod->estoque_minimo = $produto == null ? '' : $produto->estoque_minimo;
             $prod->marca_id = $produto == null ? 0 : $produto->marca_id;
             $prod->gerenciar_estoque = $produto == null ? $configGerenciaEstoque : $produto->gerenciar_estoque;
+            $prod->tipo_unico = $produto == null ? 0 : $produto->tipo_unico;
 
             $prod->refernecia = $produto == null ? '' : $produto->refernecia;
             $prod->referencia_balanca = $produto == null ? '' : $produto->referencia_balanca;

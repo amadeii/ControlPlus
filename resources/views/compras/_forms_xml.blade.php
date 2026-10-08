@@ -258,6 +258,7 @@
                                                 <input type="hidden" class="_valor_minimo_venda" name="_valor_minimo_venda[]" value="{{ $prod->valor_minimo_venda }}">
 
                                                 <input type="hidden" class="_gerenciar_estoque" name="_gerenciar_estoque[]" value="{{ $prod->gerenciar_estoque }}">
+                                                <input type="hidden" class="_tipo_unico" name="_tipo_unico[]" value="{{ $prod->tipo_unico ?? 0 }}">
 
                                                 <input type="hidden" class="_qtd_original" value="{{ $prod->quantidade }}">
                                                 <input type="hidden" class="_valor_unitario_original" value="{{ $prod->valor_unitario }}">

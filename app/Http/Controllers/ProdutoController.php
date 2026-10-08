@@ -1489,6 +1489,12 @@ private function mask($val, $mask)
     return $maskared;
 }
 
+private function parseTipoUnicoImport($value): int
+{
+    $value = strtolower(trim((string)$value));
+    return in_array($value, ['1', 'sim', 's', 'true', 'yes'], true) ? 1 : 0;
+}
+
 private function preparaObjeto($linha, $empresa_id)
 {
     $ncm = trim((string)$linha[4]);
@@ -1544,6 +1550,7 @@ private function preparaObjeto($linha, $empresa_id)
         'estoque' => $linha[26],
         'estoque_minimo' => $linha[27] ?? 0,
         'referencia' => $linha[28] ?? '',
+        'tipo_unico' => $this->parseTipoUnicoImport($linha[29] ?? null),
         'percentual_lucro' => $percentualLucro,
         'valor_prazo' => 0
     ];
